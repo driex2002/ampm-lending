@@ -86,6 +86,14 @@ COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 # but we keep this copy in case the wrapper is ever invoked indirectly.
 COPY --from=builder /app/node_modules/prisma/build/prisma_schema_build_bg.wasm ./node_modules/.bin/prisma_schema_build_bg.wasm
 
+# Copy tsx so the seed script can run inside the container.
+# tsx is a devDependency and is NOT included in the Next.js standalone output.
+# The seed command (prisma db seed) reads package.json and executes:
+#   tsx prisma/seed.ts
+# Without tsx in node_modules/.bin/ this command fails with "command not found".
+COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
+COPY --from=builder /app/node_modules/.bin/tsx ./node_modules/.bin/tsx
+
 # ── Startup script ────────────────────────────────────────────────────────────
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
