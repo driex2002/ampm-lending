@@ -18,8 +18,8 @@
 #        docker exec ampm-app node ./node_modules/prisma/build/index.js db seed
 #
 # Default admin credentials (set in prisma/seed.ts):
-#   Email:    admin@ampmlending.com
-#   Password: Admin@AMPM2024!
+#   Email:    driex2002@gmail.com
+#   Password: pass1234
 # ============================================================
 set -e
 

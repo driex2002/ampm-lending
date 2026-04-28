@@ -15,8 +15,8 @@ async function main() {
   // -----------------------------------------------------------
   // 1. ADMIN ACCOUNT
   // -----------------------------------------------------------
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@ampmlending.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@AMPM2024!";
+  const adminEmail = process.env.ADMIN_EMAIL ?? "driex2002@gmail.com";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "pass1234";
   const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
   const admin = await prisma.user.upsert({
