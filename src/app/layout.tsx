@@ -1,0 +1,33 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
+import { Providers } from "@/components/providers";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s | AMPM Lending",
+    default: "AMPM Lending – Loan Management System",
+  },
+  description: "Professional loan management system for AMPM Lending",
+  robots: { index: false, follow: false }, // No indexing for internal system
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className={inter.variable}>
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <Providers>
+          {children}
+          <Toaster richColors position="top-right" />
+        </Providers>
+      </body>
+    </html>
+  );
+}

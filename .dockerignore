@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.next
+.git
+.gitignore
+README.md
+docker-compose*.yml
+.env*
+coverage
+.nyc_output
+tests
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+prisma/migrations
+docs

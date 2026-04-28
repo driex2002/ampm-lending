@@ -1,0 +1,512 @@
+// =============================================================
+// AMPM LENDING — PRISMA SCHEMA
+// Production-ready schema with full audit trail support
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  BORROWER
+}
+
+enum LoanStatus {
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+  RESTRUCTURED
+  CANCELLED
+}
+
+enum PaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum RateType {
+  PERCENTAGE_PER_PERIOD // e.g. 5% per month
+  FLAT_RATE             // fixed total interest amount
+  DIMINISHING           // interest on remaining balance
+}
+
+enum PenaltyType {
+  FLAT                        // fixed amount per late payment
+  PERCENTAGE_OF_PRINCIPAL     // % of original principal
+  PERCENTAGE_OF_OUTSTANDING   // % of remaining balance
+}
+
+enum PaymentType {
+  CASH
+  BANK_TRANSFER
+  GCASH
+  MAYA
+  CUSTOM
+}
+
+enum WaiverType {
+  PER_PAYMENT  // waive interest on one specific schedule entry
+  FULL_LOAN    // waive all remaining interest on the loan
+}
+
+enum ScheduleStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  WAIVED
+  CANCELLED
+}
+
+enum NotificationType {
+  TEMP_PASSWORD
+  PASSWORD_RESET
+  PAYMENT_CONFIRMATION
+  PAYMENT_REMINDER
+  OVERDUE_ALERT
+  LOAN_CREATED
+  LOAN_COMPLETED
+  EMAIL_CHANGED
+  ACCOUNT_CREATED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ---------------------------------------------------------------
+// USERS
+// ---------------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      Role     @default(BORROWER)
+
+  // Authentication
+  password           String?   // hashed with bcrypt; null if OAuth only
+  mustChangePassword Boolean   @default(false)
+  tempPasswordExpiry DateTime?
+  loginAttempts      Int       @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+
+  // Personal Information
+  firstName  String
+  middleName String?
+  lastName   String
+  cellphone  String
+  sex        String   // "Male" | "Female" | "Other"
+  birthDate  DateTime
+
+  // Address
+  purok    String?
+  street   String?
+  barangay String
+  townCity String
+  province String
+  country  String  @default("Philippines")
+
+  // Admin internal
+  notes           String?   @db.Text // admin notes / remarks
+  isActive        Boolean   @default(true)
+  isBlacklisted   Boolean   @default(false)
+  blacklistReason String?
+  blacklistedAt   DateTime?
+  blacklistedBy   String?
+
+  // Created by which admin
+  createdBy String?
+
+  // Soft delete
+  deletedAt DateTime?
+
+  // Relations
+  loans            Loan[]
+  payments         Payment[]
+  auditLogs        AuditLog[]    @relation("AuditPerformedBy")
+  borrowerAudits   AuditLog[]    @relation("AuditTargetUser")
+  notifications    Notification[]
+  accounts         Account[]
+  sessions         Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@index([isBlacklisted])
+  @@map("users")
+}
+
+// ---------------------------------------------------------------
+// LOAN TERMS (fully dynamic, admin-managed)
+// ---------------------------------------------------------------
+
+model LoanTerm {
+  id           String           @id @default(cuid())
+  name         String           @unique // e.g. "Daily 30 Days", "Monthly 12 Months"
+  frequency    PaymentFrequency
+  intervalDays Int?             // used for CUSTOM frequency
+  totalPeriods Int              // number of payment periods
+  description  String?
+  isActive     Boolean          @default(true)
+
+  loans Loan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("loan_terms")
+}
+
+// ---------------------------------------------------------------
+// INTEREST CONFIGURATIONS (admin-managed templates)
+// ---------------------------------------------------------------
+
+model InterestConfig {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g. "5% Monthly", "Flat 20%"
+  rate        Decimal  @db.Decimal(10, 4) // e.g. 5.0000 = 5%
+  rateType    RateType
+  description String?
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("interest_configs")
+}
+
+// ---------------------------------------------------------------
+// PENALTY CONFIGURATIONS (admin-managed templates)
+// ---------------------------------------------------------------
+
+model PenaltyConfig {
+  id          String      @id @default(cuid())
+  name        String      @unique // e.g. "₱200 Flat Penalty", "5% of Principal"
+  amount      Decimal     @db.Decimal(15, 2)
+  penaltyType PenaltyType
+  graceDays   Int         @default(0) // days after due before penalty applies
+  description String?
+  isActive    Boolean     @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("penalty_configs")
+}
+
+// ---------------------------------------------------------------
+// LOANS
+// ---------------------------------------------------------------
+
+model Loan {
+  id         String @id @default(cuid())
+  loanNumber String @unique // e.g. AMPM-2024-00001
+
+  borrower   User   @relation(fields: [borrowerId], references: [id])
+  borrowerId String
+
+  // Loan amounts
+  principalAmount    Decimal @db.Decimal(15, 2)
+  totalInterest      Decimal @db.Decimal(15, 2) @default(0)
+  totalAmount        Decimal @db.Decimal(15, 2) // principal + total interest
+  outstandingBalance Decimal @db.Decimal(15, 2) // remaining to be paid
+  totalPaid          Decimal @db.Decimal(15, 2) @default(0)
+
+  // Interest
+  interestRate     Decimal  @db.Decimal(10, 4) // rate applied to THIS loan
+  interestRateType RateType
+
+  // Term
+  termId       String?
+  term         LoanTerm? @relation(fields: [termId], references: [id])
+  customTermDescription String? // if no preset term
+
+  // Penalty
+  penaltyAmount Decimal     @db.Decimal(15, 2) @default(0)
+  penaltyType   PenaltyType?
+  graceDays     Int         @default(0)
+
+  // Dates
+  startDate    DateTime
+  endDate      DateTime? // expected completion date
+  completedAt  DateTime? // actual completion date
+
+  // Status
+  status        LoanStatus @default(ACTIVE)
+  isOverdue     Boolean    @default(false)
+  overdueSince  DateTime?
+
+  // Interest Waiver
+  isInterestWaived Boolean   @default(false)
+  waiverType       WaiverType?
+  waiverReason     String?
+  waivedAmount     Decimal   @db.Decimal(15, 2) @default(0)
+  waivedAt         DateTime?
+  waivedBy         String?   // admin user ID
+
+  // Admin notes
+  notes     String? @db.Text
+  createdBy String  // admin user ID
+
+  // Soft delete
+  deletedAt DateTime?
+
+  // Relations
+  payments         Payment[]
+  paymentSchedules PaymentSchedule[]
+  auditLogs        AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([borrowerId])
+  @@index([status])
+  @@index([isOverdue])
+  @@index([loanNumber])
+  @@map("loans")
+}
+
+// ---------------------------------------------------------------
+// PAYMENT SCHEDULES (auto-generated when loan is created)
+// ---------------------------------------------------------------
+
+model PaymentSchedule {
+  id     String @id @default(cuid())
+  loan   Loan   @relation(fields: [loanId], references: [id])
+  loanId String
+
+  periodNumber Int      // 1, 2, 3 ... n
+  dueDate      DateTime
+
+  // Amounts due
+  totalDue     Decimal @db.Decimal(15, 2)
+  principalDue Decimal @db.Decimal(15, 2)
+  interestDue  Decimal @db.Decimal(15, 2)
+  penaltyDue   Decimal @db.Decimal(15, 2) @default(0)
+
+  // Payment tracking
+  status     ScheduleStatus @default(PENDING)
+  paidAmount Decimal        @db.Decimal(15, 2) @default(0)
+  paidAt     DateTime?
+
+  // Per-schedule interest waiver
+  isInterestWaived Boolean @default(false)
+  waivedAmount     Decimal @db.Decimal(15, 2) @default(0)
+  waiverReason     String?
+  waivedBy         String?
+
+  // Link to payment that settled this schedule
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loanId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("payment_schedules")
+}
+
+// ---------------------------------------------------------------
+// PAYMENTS
+// ---------------------------------------------------------------
+
+model Payment {
+  id              String @id @default(cuid())
+  referenceNumber String @unique // e.g. PAY-20241201-00001
+
+  loan       Loan   @relation(fields: [loanId], references: [id])
+  loanId     String
+  borrower   User   @relation(fields: [borrowerId], references: [id])
+  borrowerId String
+
+  // Payment breakdown
+  amount        Decimal @db.Decimal(15, 2) // total amount received
+  principalPaid Decimal @db.Decimal(15, 2)
+  interestPaid  Decimal @db.Decimal(15, 2)
+  penaltyPaid   Decimal @db.Decimal(15, 2) @default(0)
+  waivedInterest Decimal @db.Decimal(15, 2) @default(0)
+
+  // Balance snapshot
+  balanceBefore Decimal @db.Decimal(15, 2)
+  balanceAfter  Decimal @db.Decimal(15, 2)
+
+  // Payment details
+  paymentDate DateTime
+  paymentType PaymentType
+  remarks     String? @db.Text
+
+  // Overpayment handling
+  isOverpayment       Boolean @default(false)
+  overpaymentAmount   Decimal @db.Decimal(15, 2) @default(0)
+  overpaymentApproved Boolean @default(false)
+
+  // Interest waiver applied on this payment
+  waiverType   WaiverType?
+  waiverReason String?
+
+  // Who processed it
+  processedBy String // admin user ID
+
+  // Relations
+  schedules PaymentSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loanId])
+  @@index([borrowerId])
+  @@index([paymentDate])
+  @@index([referenceNumber])
+  @@map("payments")
+}
+
+// ---------------------------------------------------------------
+// AUDIT LOGS
+// ---------------------------------------------------------------
+
+model AuditLog {
+  id            String @id @default(cuid())
+  entityType    String // 'User' | 'Loan' | 'Payment' | 'LoanTerm' | 'Settings' ...
+  entityId      String
+  action        String // 'CREATE' | 'UPDATE' | 'DELETE' | 'WAIVE_INTEREST' | 'LOGIN' ...
+
+  performedBy     String // user ID
+  performedByRole Role
+  performer       User?  @relation("AuditPerformedBy", fields: [performedBy], references: [id])
+
+  // Optional direct links
+  targetUserId String?
+  targetUser   User?   @relation("AuditTargetUser", fields: [targetUserId], references: [id])
+  loanId       String?
+  loan         Loan?   @relation(fields: [loanId], references: [id])
+
+  // Change data
+  oldValue Json?
+  newValue Json?
+  reason   String? @db.Text
+  metadata Json?   // extra context (IP, user agent, etc.)
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([performedBy])
+  @@index([targetUserId])
+  @@index([loanId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------
+// EMAIL NOTIFICATIONS
+// ---------------------------------------------------------------
+
+model Notification {
+  id           String             @id @default(cuid())
+  type         NotificationType
+  status       NotificationStatus @default(PENDING)
+  recipientId  String
+  recipient    User               @relation(fields: [recipientId], references: [id])
+  recipientEmail String           // snapshot at time of send
+  subject      String
+  body         String?            @db.Text
+  metadata     Json?              // payment details, etc.
+  sentAt       DateTime?
+  failReason   String?
+  retryCount   Int                @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recipientId])
+  @@index([status])
+  @@index([type])
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------------
+// SYSTEM SETTINGS (key-value store for admin-configurable values)
+// ---------------------------------------------------------------
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  category    String   @default("general")
+  updatedBy   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@map("system_settings")
+}
+
+// ---------------------------------------------------------------
+// NEXTAUTH TABLES
+// ---------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}

@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ampm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ampm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ampm_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ampm_lending}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ampm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ampm-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      # Database — use local postgres service
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ampm}:${POSTGRES_PASSWORD:-ampm_password}@postgres:5432/${POSTGRES_DB:-ampm_lending}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-ampm}:${POSTGRES_PASSWORD:-ampm_password}@postgres:5432/${POSTGRES_DB:-ampm_lending}?schema=public
+      # Auth
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      # Google OAuth (optional)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Email (Gmail SMTP)
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-AMPM Lending}
+      # App
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-AMPM Lending}
+      NODE_ENV: production
+
+volumes:
+  postgres_data:
+    driver: local
