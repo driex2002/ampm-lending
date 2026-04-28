@@ -89,7 +89,7 @@ export async function sendNotification(
       recipientId: payload.recipientId,
       recipientEmail: payload.recipientEmail,
       subject: payload.subject,
-      metadata: payload.metadata,
+      metadata: payload.metadata as any,
     },
   });
 

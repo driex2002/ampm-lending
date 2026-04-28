@@ -31,7 +31,7 @@ export async function GET() {
     startDate: loan.startDate.toISOString(),
     endDate: loan.endDate?.toISOString() ?? null,
     interestRate: Number(loan.interestRate),
-    paymentFrequency: loan.paymentFrequency,
+    paymentFrequency: loan.term?.frequency ?? null,
     term: loan.term ? { name: loan.term.name } : null,
     nextDueDate: loan.paymentSchedules[0]?.dueDate?.toISOString() ?? null,
     nextDueAmount: loan.paymentSchedules[0] ? Number(loan.paymentSchedules[0].totalDue) - Number(loan.paymentSchedules[0].paidAmount) : null,

@@ -2,14 +2,15 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ok, unauthorized, notFound, forbidden } from "@/app/api/_helpers";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const loan = await db.loan.findFirst({
-    where: { id: params.id, borrowerId: session.user.id, deletedAt: null },
+    where: { id, borrowerId: session.user.id, deletedAt: null },
     include: {
-      term: { select: { name: true } },
+      term: { select: { name: true, frequency: true } },
       paymentSchedules: { orderBy: { dueDate: "asc" } },
     },
   });
@@ -28,7 +29,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     endDate: loan.endDate?.toISOString() ?? null,
     interestRate: Number(loan.interestRate),
     rateType: loan.interestRateType,
-    paymentFrequency: loan.paymentFrequency,
+    paymentFrequency: loan.term?.frequency ?? null,
     term: loan.term ? { name: loan.term.name } : null,
     schedules: loan.paymentSchedules.map((s) => ({
       id: s.id,

@@ -135,6 +135,8 @@ export const authConfig: NextAuthConfig = {
           role: user.role,
           mustChangePassword: user.mustChangePassword,
           isActive: user.isActive,
+          firstName: user.firstName,
+          lastName: user.lastName,
         };
       },
     }),

@@ -43,10 +43,8 @@ const nextConfig: NextConfig = {
     fetches: { fullUrl: true },
   },
 
-  // Experimental features
-  experimental: {
-    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs", "nodemailer"],
-  },
+  // External packages that should not be bundled by the server components bundler
+  serverExternalPackages: ["@prisma/client", "bcryptjs", "nodemailer"],
 
   // Redirects
   async redirects() {
