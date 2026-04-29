@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Loader2, DollarSign, RefreshCw } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import Link from "next/link";
+import { EditPaymentModal } from "@/components/admin/edit-payment-modal";
+import type { PaymentSnapshot } from "@/components/admin/edit-payment-modal";
 
 interface Payment {
   id: string; referenceNumber: string; amount: number; paymentDate: string;
   paymentType: string; principalPaid: number; interestPaid: number;
   penaltyPaid: number; penaltyWaived: number; notes: string | null;
-  loan: { id: string; loanNumber: string; borrower: { firstName: string; middleName: string | null; lastName: string; email: string } };
+  loan: { id: string; loanNumber: string; borrower: { id: string; firstName: string; middleName: string | null; lastName: string; email: string } };
 }
 
 export function PaymentsView() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [editPayment, setEditPayment] = useState<PaymentSnapshot | null>(null);
+  const qc = useQueryClient();
 
   const query = new URLSearchParams({ page: String(page), limit: "20", ...(search && { search }) });
 
@@ -54,7 +58,7 @@ export function PaymentsView() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["Ref #", "Date", "Borrower", "Loan #", "Amount", "Principal", "Interest", "Penalty", "Waived", "Type"].map(h => (
+                  {["Ref #", "Date", "Borrower", "Loan #", "Amount", "Principal", "Interest", "Penalty", "Waived", "Type", "Actions"].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -65,7 +69,7 @@ export function PaymentsView() {
                     <td className="px-4 py-3 font-mono text-xs text-brand-700">{p.referenceNumber}</td>
                     <td className="px-4 py-3 text-xs whitespace-nowrap text-gray-500">{formatDateTime(p.paymentDate)}</td>
                     <td className="px-4 py-3">
-                      <Link href={`/admin/borrowers/${p.loan.borrower}`} className="text-gray-800 hover:text-brand-600">
+                      <Link href={`/admin/borrowers/${p.loan.borrower.id}`} className="text-gray-800 hover:text-brand-600">
                         {p.loan.borrower.firstName} {p.loan.borrower.lastName}
                       </Link>
                     </td>
@@ -78,6 +82,24 @@ export function PaymentsView() {
                     <td className="px-4 py-3 text-red-600">{p.penaltyPaid > 0 ? formatCurrency(p.penaltyPaid) : "—"}</td>
                     <td className="px-4 py-3 text-amber-600">{p.penaltyWaived > 0 ? formatCurrency(p.penaltyWaived) : "—"}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{p.paymentType}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setEditPayment({
+                          id: p.id,
+                          referenceNumber: p.referenceNumber,
+                          amount: p.amount,
+                          paymentDate: p.paymentDate,
+                          paymentType: p.paymentType,
+                          principalPaid: p.principalPaid,
+                          interestPaid: p.interestPaid,
+                          penaltyPaid: p.penaltyPaid,
+                          remarks: p.notes,
+                        })}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -95,6 +117,14 @@ export function PaymentsView() {
           </div>
         )}
       </div>
+
+      {editPayment && (
+        <EditPaymentModal
+          payment={editPayment}
+          onClose={() => setEditPayment(null)}
+          onSuccess={() => { setEditPayment(null); qc.invalidateQueries({ queryKey: ["admin-payments"] }); }}
+        />
+      )}
     </div>
   );
 }

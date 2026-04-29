@@ -76,6 +76,7 @@ export function SettingsView() {
         </button>
       </div>
 
+      {/* System Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
         {settings.map((setting) => (
           <div key={setting.key} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start py-4 border-b border-gray-50 last:border-0">

@@ -12,9 +12,20 @@ export async function GET(_req: NextRequest) {
   const guard = await requireAdmin();
   if ("status" in guard) return guard;
 
+  const FREQ_ORDER: Record<string, number> = {
+    DAILY: 0, WEEKLY: 1, SEMI_MONTHLY: 2, MONTHLY: 3, QUARTERLY: 4, SEMI_ANNUAL: 5, YEARLY: 6,
+    BIWEEKLY: 7, CUSTOM: 99,
+  };
+
   const terms = await db.loanTerm.findMany({
     where: { isActive: true },
-    orderBy: { name: "asc" },
+    orderBy: [{ totalPeriods: "asc" }],
+  });
+
+  terms.sort((a, b) => {
+    const fo = (FREQ_ORDER[a.frequency] ?? 50) - (FREQ_ORDER[b.frequency] ?? 50);
+    if (fo !== 0) return fo;
+    return a.totalPeriods - b.totalPeriods;
   });
 
   return ok(terms);

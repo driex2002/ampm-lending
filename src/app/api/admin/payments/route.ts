@@ -10,7 +10,7 @@ import { applyPayment, calculatePenalty } from "@/lib/loan-calculator";
 import { generatePaymentReference, getPaginationOffset, buildPaginationMeta } from "@/lib/utils";
 import { auditPaymentRecorded } from "@/lib/audit";
 import { sendNotification } from "@/lib/email/mailer";
-import { paymentConfirmationTemplate } from "@/lib/email/templates";
+import { paymentConfirmationTemplate, loanCompletedTemplate } from "@/lib/email/templates";
 import { format } from "date-fns";
 import {
   requireAdmin,
@@ -34,22 +34,44 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") ?? "20", 10);
   const loanId = searchParams.get("loanId");
   const borrowerId = searchParams.get("borrowerId");
+  const search = searchParams.get("search") ?? "";
 
   const { skip, take } = getPaginationOffset(page, limit);
 
   const where = {
     ...(loanId && { loanId }),
     ...(borrowerId && { borrowerId }),
+    ...(search && {
+      OR: [
+        { referenceNumber: { contains: search, mode: "insensitive" as const } },
+        { loan: { loanNumber: { contains: search, mode: "insensitive" as const } } },
+        {
+          loan: {
+            borrower: {
+              OR: [
+                { firstName: { contains: search, mode: "insensitive" as const } },
+                { lastName: { contains: search, mode: "insensitive" as const } },
+              ],
+            },
+          },
+        },
+      ],
+    }),
   };
 
   const [payments, total] = await Promise.all([
     db.payment.findMany({
       where,
       include: {
-        borrower: {
-          select: { firstName: true, lastName: true, email: true },
+        loan: {
+          select: {
+            id: true,
+            loanNumber: true,
+            borrower: {
+              select: { id: true, firstName: true, middleName: true, lastName: true, email: true },
+            },
+          },
         },
-        loan: { select: { loanNumber: true } },
       },
       orderBy: { paymentDate: "desc" },
       skip,
@@ -117,12 +139,15 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Calculate waived interest
+  // Calculate waived interest (FULL_LOAN only)
   const waivedAmount = currentSchedule?.isInterestWaived
     ? Number(currentSchedule.waivedAmount)
-    : data.waiverType === "PER_PAYMENT"
+    : data.waiverType === "FULL_LOAN"
     ? Number(currentSchedule?.interestDue ?? 0)
     : 0;
+
+  // PER_PAYMENT waives the penalty for this payment only; interest is always collected
+  const waivedPenalty = data.waiverType === "PER_PAYMENT" ? penaltyDue : 0;
 
   // Apply payment
   const result = applyPayment({
@@ -133,6 +158,7 @@ export async function POST(req: NextRequest) {
       interestDue: Number(currentSchedule?.interestDue ?? 0),
       penaltyDue,
       waivedAmount,
+      waivedPenalty,
     },
     allowOverpayment: data.allowOverpayment ?? false,
   });
@@ -189,6 +215,9 @@ export async function POST(req: NextRequest) {
                 : "PARTIAL",
             paidAt: result.newBalance === 0 ? new Date() : undefined,
             ...(data.waiverType === "PER_PAYMENT" && {
+              waiverReason: data.waiverReason,
+            }),
+            ...(data.waiverType === "FULL_LOAN" && {
               isInterestWaived: true,
               waivedAmount: result.waivedInterest,
               waiverReason: data.waiverReason,
@@ -266,6 +295,25 @@ export async function POST(req: NextRequest) {
         balanceAfter: result.newBalance,
       },
     });
+
+    // Send dedicated loan-completed email when fully paid
+    if (result.newBalance === 0) {
+      const { subject: completedSubject, html: completedHtml } = loanCompletedTemplate({
+        firstName: loan.borrower.firstName,
+        loanNumber: loan.loanNumber,
+        principalAmount: Number(loan.principalAmount),
+        totalPaid: Number(loan.totalPaid) + result.principalPaid + result.interestPaid + result.penaltyPaid,
+        completedAt: format(new Date(data.paymentDate), "MMM dd, yyyy"),
+      });
+      await sendNotification({
+        recipientId: loan.borrower.id,
+        recipientEmail: loan.borrower.email,
+        type: "LOAN_COMPLETED",
+        subject: completedSubject,
+        html: completedHtml,
+        metadata: { loanId: data.loanId, referenceNumber },
+      });
+    }
 
     return created(
       {

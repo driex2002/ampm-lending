@@ -15,8 +15,7 @@ interface LoanDetail {
   id: string; loanNumber: string; principalAmount: number; totalAmount: number;
   outstandingBalance: number; status: string; isOverdue: boolean;
   startDate: string; endDate: string; interestRate: number;
-  rateType: string; paymentFrequency: string;
-  term: { name: string } | null;
+  rateType: string; paymentFrequency: string | null; totalPeriods: number | null;
   schedules: ScheduleItem[];
 }
 
@@ -47,7 +46,11 @@ export function BorrowerLoanDetailView({ id }: { id: string }) {
             <span className="px-2.5 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">Active</span>
           )}
         </div>
-        <p className="text-sm text-gray-500 mt-0.5">{loan.term?.name ?? "Custom"} · {loan.paymentFrequency.replace(/_/g, " ")}</p>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {loan.paymentFrequency
+            ? `${loan.paymentFrequency.replace(/_/g, " ")} × ${loan.totalPeriods} terms`
+            : "—"}
+        </p>
       </div>
 
       {/* Summary */}

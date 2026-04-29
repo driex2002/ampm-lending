@@ -16,22 +16,26 @@ interface Props {
 }
 
 interface BorrowerOption { id: string; firstName: string; middleName: string | null; lastName: string; email: string; }
-interface LoanTermOption { id: string; name: string; durationMonths: number; frequency: string; }
+
+const FREQ_OPTIONS = [
+  { value: "DAILY",        label: "Daily" },
+  { value: "WEEKLY",       label: "Weekly" },
+  { value: "SEMI_MONTHLY", label: "Semi-Monthly" },
+  { value: "MONTHLY",      label: "Monthly" },
+  { value: "QUARTERLY",    label: "Quarterly" },
+  { value: "SEMI_ANNUAL",  label: "Semi-Annual" },
+  { value: "YEARLY",       label: "Yearly" },
+];
 
 export function CreateLoanModal({ onClose, onSuccess }: Props) {
   const [isPending, startTransition] = useTransition();
   const [borrowers, setBorrowers] = useState<BorrowerOption[]>([]);
-  const [loanTerms, setLoanTerms] = useState<LoanTermOption[]>([]);
   const [borrowerSearch, setBorrowerSearch] = useState("");
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(createLoanSchema),
-    defaultValues: { startDate: new Date().toISOString().split("T")[0], interestRateType: "PERCENTAGE_PER_PERIOD", penaltyAmount: 0, graceDays: 0 },
+    defaultValues: { startDate: new Date().toISOString().split("T")[0], interestRateType: "PERCENTAGE_PER_PERIOD", penaltyAmount: 0, graceDays: 0, paymentFrequency: "MONTHLY" },
   });
-
-  useEffect(() => {
-    fetch("/api/admin/loan-terms").then(r => r.json()).then(d => setLoanTerms(d?.data ?? []));
-  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -40,11 +44,6 @@ export function CreateLoanModal({ onClose, onSuccess }: Props) {
     }, 300);
     return () => clearTimeout(t);
   }, [borrowerSearch]);
-
-  const selectedTermId = watch("termId");
-
-  // Auto-fill term info on selection (no client-side override needed)
-  useEffect(() => { /* frequency comes from term */ }, [selectedTermId, loanTerms]);
 
   const onSubmit = (data: FormData) => {
     startTransition(async () => {
@@ -65,7 +64,7 @@ export function CreateLoanModal({ onClose, onSuccess }: Props) {
   const field = (name: keyof FormData, label: string, type = "text", required = false, step?: string) => (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
-      <input type={type} step={step} {...register(name)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      <input type={type} step={step} {...register(name, type === "number" ? { valueAsNumber: true } : {})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
       {errors[name] && <p className="text-red-500 text-xs mt-0.5">{errors[name]?.message as string}</p>}
     </div>
   );
@@ -102,14 +101,12 @@ export function CreateLoanModal({ onClose, onSuccess }: Props) {
               {field("principalAmount", "Principal Amount (₱)", "number", true, "0.01")}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Loan Term <span className="text-red-500">*</span></label>
-                <select {...register("termId")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
-                  <option value="">-- Select Term --</option>
-                  {loanTerms.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.durationMonths} months, {t.frequency})</option>
-                  ))}
+                <select {...register("paymentFrequency")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                  {FREQ_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
-                {errors.termId && <p className="text-red-500 text-xs mt-0.5">{errors.termId.message}</p>}
+                {errors.paymentFrequency && <p className="text-red-500 text-xs mt-0.5">{errors.paymentFrequency.message as string}</p>}
               </div>
+              {field("totalPeriods", "# of Terms", "number", true)}
               {field("interestRate", "Interest Rate (%)", "number", true, "0.01")}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Rate Type <span className="text-red-500">*</span></label>

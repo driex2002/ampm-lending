@@ -7,10 +7,13 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
 import { RecordPaymentModal } from "@/components/admin/record-payment-modal";
+import { EditLoanModal } from "@/components/admin/edit-loan-modal";
+import { EditPaymentModal } from "@/components/admin/edit-payment-modal";
+import type { PaymentSnapshot } from "@/components/admin/edit-payment-modal";
 
 interface ScheduleItem {
   id: string; periodNumber: number; dueDate: string; principalDue: number;
-  interestDue: number; totalDue: number; paidAmount: number; balance: number;
+  interestDue: number; totalDue: number; paidAmount: number;
   status: string; paidAt: string | null; penaltyDue: number;
   waivedAmount: number; isInterestWaived: boolean;
 }
@@ -24,10 +27,11 @@ interface Payment {
 interface LoanDetail {
   id: string; loanNumber: string; principalAmount: number; totalAmount: number;
   outstandingBalance: number; status: string; isOverdue: boolean; startDate: string;
-  endDate: string; interestRate: number; interestRateType: string; paymentFrequency: string;
+  endDate: string; interestRate: number; interestRateType: string;
+  paymentFrequency: string | null; totalPeriods: number | null;
+  penaltyAmount: number | null; penaltyType: string | null; graceDays: number | null;
   notes: string | null;
   borrower: { id: string; firstName: string; middleName: string | null; lastName: string; email: string };
-  term: { name: string } | null;
   paymentSchedules: ScheduleItem[];
   payments: Payment[];
 }
@@ -35,6 +39,8 @@ interface LoanDetail {
 export function LoanDetailView({ id }: { id: string }) {
   const qc = useQueryClient();
   const [showPayment, setShowPayment] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editPayment, setEditPayment] = useState<PaymentSnapshot | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const { data, isLoading } = useQuery({
@@ -83,12 +89,20 @@ export function LoanDetailView({ id }: { id: string }) {
           <Link href={`/admin/borrowers/${loan.borrower.id}`} className="text-sm text-brand-600 hover:underline mt-1 inline-block">
             {loan.borrower.firstName} {loan.borrower.lastName} ({loan.borrower.email})
           </Link>
+          {loan.paymentFrequency && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              {loan.paymentFrequency.replace(/_/g, " ")} &times; {loan.totalPeriods} terms
+            </p>
+          )}
         </div>
         <div className="flex gap-2 flex-wrap">
           {loan.status === "ACTIVE" && (
             <>
               <button onClick={() => waiveInterest("FULL_LOAN")} disabled={isPending} className="px-3 py-2 border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg text-sm transition">
                 Waive Full Interest
+              </button>
+              <button onClick={() => setShowEdit(true)} className="px-3 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm transition">
+                Edit Loan
               </button>
               <button onClick={() => setShowPayment(true)} className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition">
                 Record Payment
@@ -137,7 +151,7 @@ export function LoanDetailView({ id }: { id: string }) {
                   <td className="px-3 py-2.5 text-red-600">{s.penaltyDue > 0 ? formatCurrency(s.penaltyDue) : "—"}</td>
                   <td className="px-3 py-2.5 font-medium">{formatCurrency(s.totalDue)}</td>
                   <td className="px-3 py-2.5 text-green-600">{s.paidAmount > 0 ? formatCurrency(s.paidAmount) : "—"}</td>
-                  <td className="px-3 py-2.5 font-semibold">{formatCurrency(s.balance)}</td>
+                  <td className="px-3 py-2.5 font-semibold">{formatCurrency(Math.max(0, s.totalDue - s.paidAmount - s.waivedAmount))}</td>
                   <td className="px-3 py-2.5">
                     {s.status === "PAID" ? <span className="text-green-600 font-medium">Paid</span>
                       : s.status === "OVERDUE" ? <span className="text-red-600 font-medium">Overdue</span>
@@ -170,7 +184,7 @@ export function LoanDetailView({ id }: { id: string }) {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Ref #", "Date", "Amount", "Principal", "Interest", "Penalty", "Waived", "Type", "Notes"].map(h => (
+                  {["Ref #", "Date", "Amount", "Principal", "Interest", "Penalty", "Waived", "Type", "Notes", "Actions"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -187,6 +201,24 @@ export function LoanDetailView({ id }: { id: string }) {
                     <td className="px-4 py-3 text-amber-600">{p.waivedInterest > 0 ? formatCurrency(p.waivedInterest) : "—"}</td>
                     <td className="px-4 py-3 text-xs">{p.paymentType}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{p.remarks ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setEditPayment({
+                          id: p.id,
+                          referenceNumber: p.referenceNumber,
+                          amount: p.amount,
+                          paymentDate: p.paymentDate,
+                          paymentType: p.paymentType,
+                          principalPaid: p.principalPaid,
+                          interestPaid: p.interestPaid,
+                          penaltyPaid: p.penaltyPaid,
+                          remarks: p.remarks,
+                        })}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -195,11 +227,40 @@ export function LoanDetailView({ id }: { id: string }) {
         )}
       </div>
 
+      {showEdit && loan && (
+        <EditLoanModal
+          loan={{
+            id: loan.id,
+            loanNumber: loan.loanNumber,
+            principalAmount: loan.principalAmount,
+            totalPeriods: loan.totalPeriods,
+            interestRate: loan.interestRate,
+            interestRateType: loan.interestRateType,
+            penaltyAmount: loan.penaltyAmount ?? 0,
+            penaltyType: loan.penaltyType ?? null,
+            graceDays: loan.graceDays ?? 0,
+            status: loan.status,
+            startDate: loan.startDate,
+            notes: loan.notes ?? null,
+          }}
+          onClose={() => setShowEdit(false)}
+          onSuccess={() => { setShowEdit(false); qc.invalidateQueries({ queryKey: ["loan", id] }); }}
+        />
+      )}
+
       {showPayment && (
         <RecordPaymentModal
           loan={{ id: loan.id, loanNumber: loan.loanNumber, outstandingBalance: loan.outstandingBalance, borrower: loan.borrower }}
           onClose={() => setShowPayment(false)}
           onSuccess={() => { setShowPayment(false); qc.invalidateQueries({ queryKey: ["loan", id] }); }}
+        />
+      )}
+
+      {editPayment && (
+        <EditPaymentModal
+          payment={editPayment}
+          onClose={() => setEditPayment(null)}
+          onSuccess={() => { setEditPayment(null); qc.invalidateQueries({ queryKey: ["loan", id] }); }}
         />
       )}
     </div>

@@ -1,45 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, User, Lock } from "lucide-react";
 import { formatDate, getFullName } from "@/lib/utils";
-import { toast } from "sonner";
-import Link from "next/link";
+import { ChangePasswordForm } from "@/components/auth/change-password-form";
 
 export function BorrowerProfileView() {
   const { data: session } = useSession();
-  const [isPending, startTransition] = useTransition();
-  const [currentPwd, setCurrentPwd] = useState("");
-  const [newPwd, setNewPwd] = useState("");
-  const [confirmPwd, setConfirmPwd] = useState("");
-
   const { data, isLoading } = useQuery({
     queryKey: ["borrower-profile"],
     queryFn: () => fetch("/api/borrower/profile").then(r => r.json()),
   });
 
   const profile = data?.data;
-
-  const handlePasswordChange = () => {
-    if (newPwd !== confirmPwd) { toast.error("Passwords do not match"); return; }
-    if (newPwd.length < 8) { toast.error("Password must be at least 8 characters"); return; }
-    startTransition(async () => {
-      const res = await fetch("/api/borrower/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
-      });
-      const json = await res.json();
-      if (res.ok) {
-        toast.success("Password changed successfully!");
-        setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
-      } else {
-        toast.error(json.error ?? "Failed to change password");
-      }
-    });
-  };
 
   if (isLoading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-brand-600" size={28} /></div>;
 
@@ -87,22 +61,8 @@ export function BorrowerProfileView() {
       {/* Change Password */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2"><Lock size={16} /> Change Password</h3>
-        <div className="space-y-3 max-w-md">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Current Password</label>
-            <input type="password" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
-            <input type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Confirm New Password</label>
-            <input type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          </div>
-          <button onClick={handlePasswordChange} disabled={isPending || !currentPwd || !newPwd || !confirmPwd} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition">
-            {isPending ? <><Loader2 size={14} className="animate-spin" /> Changing...</> : "Change Password"}
-          </button>
+        <div className="max-w-md">
+          <ChangePasswordForm mode="profile" />
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const loan = await db.loan.findFirst({
     where: { id, borrowerId: session.user.id, deletedAt: null },
     include: {
-      term: { select: { name: true, frequency: true } },
+      term: { select: { name: true, frequency: true, totalPeriods: true } },
       paymentSchedules: { orderBy: { dueDate: "asc" } },
     },
   });
@@ -29,8 +29,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     endDate: loan.endDate?.toISOString() ?? null,
     interestRate: Number(loan.interestRate),
     rateType: loan.interestRateType,
-    paymentFrequency: loan.term?.frequency ?? null,
-    term: loan.term ? { name: loan.term.name } : null,
+    paymentFrequency: loan.paymentFrequency ?? (loan.term?.frequency as string) ?? null,
+    totalPeriods: loan.totalPeriods ?? loan.term?.totalPeriods ?? null,
     schedules: loan.paymentSchedules.map((s) => ({
       id: s.id,
       installmentNumber: s.periodNumber,

@@ -56,7 +56,11 @@ export async function GET(
 
   if (!loan) return notFound("Loan not found");
 
-  return ok(loan);
+  return ok({
+    ...loan,
+    paymentFrequency: loan.paymentFrequency ?? loan.term?.frequency ?? null,
+    totalPeriods: loan.totalPeriods ?? loan.term?.totalPeriods ?? null,
+  });
 }
 
 // ---------------------------------------------------------------
@@ -172,9 +176,14 @@ export async function PATCH(
   const oldValues = {
     notes: loan.notes,
     status: loan.status,
+    principalAmount: loan.principalAmount,
+    totalPeriods: loan.totalPeriods,
+    interestRate: loan.interestRate,
+    interestRateType: loan.interestRateType,
     penaltyAmount: loan.penaltyAmount,
     penaltyType: loan.penaltyType,
     graceDays: loan.graceDays,
+    startDate: loan.startDate,
   };
 
   const updated = await db.loan.update({
@@ -182,9 +191,14 @@ export async function PATCH(
     data: {
       ...(data.notes !== undefined && { notes: data.notes }),
       ...(data.status && { status: data.status as any }),
+      ...(data.principalAmount !== undefined && { principalAmount: data.principalAmount }),
+      ...(data.totalPeriods !== undefined && { totalPeriods: data.totalPeriods }),
+      ...(data.interestRate !== undefined && { interestRate: data.interestRate }),
+      ...(data.interestRateType && { interestRateType: data.interestRateType as any }),
       ...(data.penaltyAmount !== undefined && { penaltyAmount: data.penaltyAmount }),
       ...(data.penaltyType !== undefined && { penaltyType: data.penaltyType as any }),
       ...(data.graceDays !== undefined && { graceDays: data.graceDays }),
+      ...(data.startDate && { startDate: new Date(data.startDate) }),
     },
   });
 

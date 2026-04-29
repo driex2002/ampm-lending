@@ -6,15 +6,23 @@ import { Search, Plus, Eye, RefreshCw, Loader2, CreditCard, AlertTriangle } from
 import { formatCurrency, formatDate, getFullName } from "@/lib/utils";
 import { CreateLoanModal } from "@/components/admin/create-loan-modal";
 import { RecordPaymentModal } from "@/components/admin/record-payment-modal";
+import { EditLoanModal } from "@/components/admin/edit-loan-modal";
 import Link from "next/link";
 
 interface Loan {
   id: string; loanNumber: string; principalAmount: number; totalAmount: number;
   outstandingBalance: number; status: string; isOverdue: boolean; startDate: string;
-  interestRate: number; nextDueDate?: string; nextDueAmount?: number;
+  interestRate: number; interestRateType: string; penaltyAmount: number;
+  penaltyType: string | null; graceDays: number; notes: string | null;
+  nextDueDate?: string; nextDueAmount?: number;
+  paymentFrequency: string | null; totalPeriods: number | null;
   borrower: { id: string; firstName: string; middleName: string | null; lastName: string; email: string };
-  term: { name: string; frequency: string } | null;
 }
+
+const FREQ_LABELS: Record<string, string> = {
+  DAILY: "Daily", WEEKLY: "Weekly", SEMI_MONTHLY: "Semi-Monthly",
+  MONTHLY: "Monthly", QUARTERLY: "Quarterly", SEMI_ANNUAL: "Semi-Annual", YEARLY: "Yearly",
+};
 
 export function LoansView() {
   const qc = useQueryClient();
@@ -24,6 +32,7 @@ export function LoansView() {
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [paymentLoan, setPaymentLoan] = useState<Loan | null>(null);
+  const [editLoan, setEditLoan] = useState<Loan | null>(null);
 
   const query = new URLSearchParams({
     page: String(page), limit: "20",
@@ -104,7 +113,11 @@ export function LoansView() {
                         {formatCurrency(loan.outstandingBalance)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{loan.term?.name ?? "Custom"}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
+                      {loan.paymentFrequency
+                        ? `${FREQ_LABELS[loan.paymentFrequency] ?? loan.paymentFrequency} × ${loan.totalPeriods}`
+                        : "—"}
+                    </td>
                     <td className="px-4 py-3 text-xs">
                       {loan.nextDueDate ? (
                         <div>
@@ -119,6 +132,9 @@ export function LoansView() {
                         <Link href={`/admin/loans/${loan.id}`} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded text-xs font-medium transition">
                           <Eye size={12} /> View
                         </Link>
+                        <button onClick={() => setEditLoan(loan)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition">
+                          Edit
+                        </button>
                         {loan.status === "ACTIVE" && (
                           <button onClick={() => setPaymentLoan(loan)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded text-xs font-medium transition">
                             Pay
@@ -149,6 +165,26 @@ export function LoansView() {
       )}
       {paymentLoan && (
         <RecordPaymentModal loan={paymentLoan} onClose={() => setPaymentLoan(null)} onSuccess={() => { setPaymentLoan(null); qc.invalidateQueries({ queryKey: ["admin-loans"] }); qc.invalidateQueries({ queryKey: ["admin-dashboard"] }); }} />
+      )}
+      {editLoan && (
+        <EditLoanModal
+          loan={{
+            id: editLoan.id,
+            loanNumber: editLoan.loanNumber,
+            principalAmount: editLoan.principalAmount,
+            totalPeriods: editLoan.totalPeriods,
+            interestRate: editLoan.interestRate,
+            interestRateType: editLoan.interestRateType,
+            penaltyAmount: editLoan.penaltyAmount,
+            penaltyType: editLoan.penaltyType,
+            graceDays: editLoan.graceDays,
+            status: editLoan.status,
+            startDate: editLoan.startDate,
+            notes: editLoan.notes,
+          }}
+          onClose={() => setEditLoan(null)}
+          onSuccess={() => { setEditLoan(null); qc.invalidateQueries({ queryKey: ["admin-loans"] }); }}
+        />
       )}
     </div>
   );

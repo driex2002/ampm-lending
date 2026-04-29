@@ -23,7 +23,13 @@
 set -e
 
 echo "Running Prisma migrations..."
-node ./node_modules/prisma/build/index.js migrate deploy
+# Use migrate deploy if migration files exist, otherwise push schema directly
+if [ -d "./prisma/migrations" ] && [ "$(ls -A ./prisma/migrations 2>/dev/null)" ]; then
+  node ./node_modules/prisma/build/index.js migrate deploy
+else
+  echo "No migrations found — pushing schema directly..."
+  node ./node_modules/prisma/build/index.js db push --skip-generate
+fi
 
 echo "Starting Next.js application..."
 exec node server.js

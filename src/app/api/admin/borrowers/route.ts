@@ -169,9 +169,9 @@ export async function POST(req: NextRequest) {
       metadata: { tempPasswordSent: true },
     });
 
-    // Don't return password hash in response
+    // Don't return password hash in response, but include temp password for admin display
     const { password: _, ...borrowerData } = borrower;
-    return created({ borrower: borrowerData }, "Borrower account created successfully");
+    return created({ borrower: borrowerData, tempPassword }, "Borrower account created successfully");
   } catch (err) {
     console.error("[Create Borrower]", err);
     return serverError("Failed to create borrower account");

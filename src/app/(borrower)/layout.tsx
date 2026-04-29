@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 
 export default async function BorrowerLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -35,7 +35,12 @@ function BorrowerNav({ user }: { user: any }) {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600 hidden sm:block">{user.name ?? user.email}</span>
-          <form action="/api/auth/signout" method="POST">
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
             <button type="submit" className="text-sm text-gray-500 hover:text-red-600 transition">Sign out</button>
           </form>
         </div>
