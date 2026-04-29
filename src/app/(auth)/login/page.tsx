@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
+import { db } from "@/lib/db";
 
-export const metadata: Metadata = {
-  title: "Login – AMPM Lending",
-};
+export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+async function getAppName() {
+  const s = await db.systemSetting
+    .findUnique({ where: { key: "app_name" }, select: { value: true } })
+    .catch(() => null);
+  return s?.value || "AMPM Lending";
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const appName = await getAppName();
+  return { title: `Login – ${appName}` };
+}
+
+export default async function LoginPage() {
+  const appName = await getAppName();
+
   return (
     <div className="w-full max-w-md">
       {/* Logo / Brand */}
@@ -15,7 +28,7 @@ export default function LoginPage() {
           <span className="text-3xl">💳</span>
         </div>
         <h1 className="text-3xl font-bold text-white tracking-tight">
-          AMPM Lending
+          {appName}
         </h1>
         <p className="text-brand-200 mt-1 text-sm">
           Loan Management System
@@ -33,7 +46,7 @@ export default function LoginPage() {
       </div>
 
       <p className="text-center text-brand-300 text-xs mt-6">
-        © {new Date().getFullYear()} AMPM Lending. All rights reserved.
+        © {new Date().getFullYear()} {appName}. All rights reserved.
       </p>
     </div>
   );

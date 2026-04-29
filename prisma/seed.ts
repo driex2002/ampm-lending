@@ -176,6 +176,48 @@ async function main() {
   // -----------------------------------------------------------
   const settings = [
     {
+      key: "app_name",
+      value: "AMPM Lending",
+      description: "Application name shown in the sidebar and browser tab",
+      category: "branding",
+    },
+    {
+      key: "app_icon",
+      value: "",
+      description: "Application icon (base64 data URL). Leave empty for default.",
+      category: "branding",
+    },
+    {
+      key: "app_favicon",
+      value: "",
+      description: "Browser tab favicon (base64 data URL). Leave empty for default.",
+      category: "branding",
+    },
+    {
+      key: "login_bg",
+      value: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2560&auto=format&fit=crop",
+      description: "Login page background image URL or base64 data URL. Default: Unsplash financial district photo (free to use).",
+      category: "branding",
+    },
+    {
+      key: "login_bg_opacity",
+      value: "0.25",
+      description: "Login background image opacity (0.05 – 0.95). Controls how strongly the image blends over the gradient.",
+      category: "branding",
+    },
+    {
+      key: "dashboard_bg",
+      value: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2560&auto=format&fit=crop",
+      description: "Dashboard/app area background image URL or base64. Default: professional business desk (Unsplash, free to use).",
+      category: "branding",
+    },
+    {
+      key: "dashboard_bg_opacity",
+      value: "0.08",
+      description: "Dashboard background image opacity (0.02-0.50). Keep low for readability.",
+      category: "branding",
+    },
+    {
       key: "business_name",
       value: "AMPM Lending",
       description: "Business display name",

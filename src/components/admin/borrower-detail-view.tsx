@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Loader2, User, Phone, MapPin, CreditCard,
-  Shield, ShieldOff, KeyRound, Edit2, X, AlertTriangle, CheckCircle,
+  Shield, ShieldOff, KeyRound, Edit2, X, AlertTriangle, CheckCircle, Bell,
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getFullName } from "@/lib/utils";
 import { toast } from "sonner";
@@ -23,6 +23,20 @@ interface BorrowerDetail {
   }>;
 }
 
+type NotifPrefs = {
+  payment_confirmation: boolean;
+  payment_reminder: boolean;
+  overdue_alert: boolean;
+  login_alert: boolean;
+};
+
+const NOTIF_OPTIONS: { key: keyof NotifPrefs; label: string; description: string }[] = [
+  { key: "payment_confirmation", label: "Payment Confirmation", description: "Email when a payment is recorded on their account." },
+  { key: "payment_reminder",     label: "Payment Reminders",    description: "Sent 3 days and 1 day before each due date." },
+  { key: "overdue_alert",        label: "Overdue Alerts",       description: "Daily alert when a payment is past its due date." },
+  { key: "login_alert",          label: "Login Alert",          description: "Email on every successful login to their account." },
+];
+
 export function BorrowerDetailView({ id }: { id: string }) {
   const qc = useQueryClient();
   const [isPending, startTransition] = useTransition();
@@ -36,6 +50,23 @@ export function BorrowerDetailView({ id }: { id: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["borrower", id],
     queryFn: () => fetch(`/api/admin/borrowers/${id}`).then(r => r.json()),
+  });
+
+  const { data: prefsData, isLoading: prefsLoading } = useQuery<NotifPrefs>({
+    queryKey: ["borrower-notif-prefs", id],
+    queryFn: () =>
+      fetch(`/api/admin/borrowers/${id}/notification-prefs`).then(r => r.json()).then(r => r.data),
+  });
+
+  const prefsMutation = useMutation({
+    mutationFn: (patch: Partial<NotifPrefs>) =>
+      fetch(`/api/admin/borrowers/${id}/notification-prefs`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      }).then(r => r.json()),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["borrower-notif-prefs", id] }),
+    onError: () => toast.error("Failed to update preferences"),
   });
 
   const borrower: BorrowerDetail | undefined = data?.data;
@@ -168,6 +199,41 @@ export function BorrowerDetailView({ id }: { id: string }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Notification Settings */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 className="font-semibold text-gray-700 mb-1 flex items-center gap-2"><Bell size={16} /> Email Notifications</h3>
+        <p className="text-xs text-gray-400 mb-4">Control which emails this borrower receives from AMPM Lending.</p>
+        {prefsLoading ? (
+          <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading…</div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {NOTIF_OPTIONS.map(({ key, label, description }) => {
+              const enabled = prefsData ? prefsData[key] !== false : true;
+              const saving = prefsMutation.isPending;
+              return (
+                <div key={key} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">{label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+                  </div>
+                  <button
+                    onClick={() => prefsMutation.mutate({ [key]: !enabled })}
+                    disabled={saving}
+                    aria-checked={enabled}
+                    role="switch"
+                    className={`relative flex-shrink-0 mt-0.5 w-10 h-6 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+                      enabled ? "bg-brand-600" : "bg-gray-200"
+                    } ${saving ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                  >
+                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {showCreateLoan && (

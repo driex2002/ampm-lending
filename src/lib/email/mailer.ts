@@ -116,3 +116,31 @@ export async function sendNotification(
     },
   });
 }
+
+// ---------------------------------------------------------------
+// Notification preference helpers
+// ---------------------------------------------------------------
+
+type NotifPrefs = {
+  payment_confirmation?: boolean;
+  payment_reminder?: boolean;
+  overdue_alert?: boolean;
+  login_alert?: boolean;
+};
+
+/**
+ * Returns true if the user has the given notification type enabled.
+ * Defaults to true when the field is null (opt-out model).
+ */
+export async function isNotifEnabled(
+  userId: string,
+  key: keyof NotifPrefs
+): Promise<boolean> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { notificationPrefs: true },
+  });
+  if (!user) return false;
+  const prefs = (user.notificationPrefs ?? {}) as NotifPrefs;
+  return prefs[key] !== false; // undefined treated as true
+}

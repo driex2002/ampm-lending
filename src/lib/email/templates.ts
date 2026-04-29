@@ -448,3 +448,48 @@ export function loanCompletedTemplate(params: {
     html: baseTemplate(content, "Loan Fully Paid"),
   };
 }
+
+// ---------------------------------------------------------------
+// Template: Login Alert
+// ---------------------------------------------------------------
+
+export function loginAlertTemplate(params: {
+  firstName: string;
+  loginTime: string;
+  ipAddress?: string;
+  device?: string;
+}): { subject: string; html: string } {
+  const content = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:40px;">🔐</div>
+      <h2 style="color:#1e293b;margin:8px 0 0;">New Login Detected</h2>
+    </div>
+
+    <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px;">
+      Dear <strong>${params.firstName}</strong>, a successful login to your AMPM Lending account was just recorded.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:20px;">
+      <tbody>
+        ${infoRow("Login Time", params.loginTime, true)}
+        ${params.ipAddress ? infoRow("IP Address", params.ipAddress) : ""}
+        ${params.device ? infoRow("Device / Browser", params.device) : ""}
+      </tbody>
+    </table>
+
+    <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;padding:16px;margin-bottom:16px;">
+      <p style="margin:0;font-size:13px;color:#92400e;">
+        🔒 If this was not you, please contact your lending officer immediately to secure your account.
+      </p>
+    </div>
+
+    <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+      This is an automated security notification. You can turn this off in your profile settings.
+    </p>
+  `;
+
+  return {
+    subject: "AMPM Lending – New Login to Your Account",
+    html: baseTemplate(content, "Login Alert"),
+  };
+}

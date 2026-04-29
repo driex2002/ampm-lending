@@ -87,6 +87,7 @@ enum NotificationType {
   LOAN_COMPLETED
   EMAIL_CHANGED
   ACCOUNT_CREATED
+  LOGIN_ALERT
 }
 
 enum NotificationStatus {
@@ -138,6 +139,14 @@ model User {
 
   // Created by which admin
   createdBy String?
+
+  // Notification preferences (null = all enabled)
+  // Keys: payment_confirmation, payment_reminder, overdue_alert, login_alert
+  notificationPrefs Json?
+
+  // Profile customisation
+  nickname  String?       // displayed in "Welcome back" messages
+  avatarUrl String?       @db.Text // base64 data URL
 
   // Soft delete
   deletedAt DateTime?

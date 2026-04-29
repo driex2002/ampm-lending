@@ -9,7 +9,7 @@ import { recordPaymentSchema } from "@/lib/validations/payment";
 import { applyPayment, calculatePenalty } from "@/lib/loan-calculator";
 import { generatePaymentReference, getPaginationOffset, buildPaginationMeta } from "@/lib/utils";
 import { auditPaymentRecorded } from "@/lib/audit";
-import { sendNotification } from "@/lib/email/mailer";
+import { sendNotification, isNotifEnabled } from "@/lib/email/mailer";
 import { paymentConfirmationTemplate, loanCompletedTemplate } from "@/lib/email/templates";
 import { format } from "date-fns";
 import {
@@ -282,19 +282,23 @@ export async function POST(req: NextRequest) {
       remarks: data.remarks ?? undefined,
     });
 
-    await sendNotification({
-      recipientId: loan.borrower.id,
-      recipientEmail: loan.borrower.email,
-      type: "PAYMENT_CONFIRMATION",
-      subject,
-      html,
-      metadata: {
-        paymentId: payment.id,
-        referenceNumber,
-        amount: data.amount,
-        balanceAfter: result.newBalance,
-      },
-    });
+    // Send payment confirmation if borrower has it enabled
+    const payConfEnabled = await isNotifEnabled(loan.borrower.id, "payment_confirmation");
+    if (payConfEnabled) {
+      await sendNotification({
+        recipientId: loan.borrower.id,
+        recipientEmail: loan.borrower.email,
+        type: "PAYMENT_CONFIRMATION",
+        subject,
+        html,
+        metadata: {
+          paymentId: payment.id,
+          referenceNumber,
+          amount: data.amount,
+          balanceAfter: result.newBalance,
+        },
+      });
+    }
 
     // Send dedicated loan-completed email when fully paid
     if (result.newBalance === 0) {
