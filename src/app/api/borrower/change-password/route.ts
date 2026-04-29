@@ -11,7 +11,7 @@ import { auditPasswordChange } from "@/lib/audit";
 import { ok, badRequest, unauthorized, serverError } from "@/app/api/_helpers";
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password required"),
+  currentPassword: z.string().optional(),
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
 }).refine((d) => d.newPassword === d.confirmPassword, {
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
 
   // If it's a mustChangePassword flow, skip current password check
   if (!user.mustChangePassword) {
+    if (!currentPassword) return badRequest("Current password required");
     const valid = await verifyPassword(currentPassword, user.password);
     if (!valid) return badRequest("Current password is incorrect");
   }

@@ -11,7 +11,7 @@ export async function GET() {
     where: { borrowerId: session.user.id, deletedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
-      term: { select: { name: true, frequency: true } },
+      term: { select: { name: true, frequency: true, totalPeriods: true } },
       paymentSchedules: {
         where: { status: { not: "PAID" } },
         orderBy: { dueDate: "asc" },
@@ -31,8 +31,8 @@ export async function GET() {
     startDate: loan.startDate.toISOString(),
     endDate: loan.endDate?.toISOString() ?? null,
     interestRate: Number(loan.interestRate),
-    paymentFrequency: loan.paymentFrequency,
-    term: loan.term ? { name: loan.term.name } : null,
+    paymentFrequency: loan.paymentFrequency ?? loan.term?.frequency ?? null,
+    totalPeriods: loan.totalPeriods ?? loan.term?.totalPeriods ?? null,
     nextDueDate: loan.paymentSchedules[0]?.dueDate?.toISOString() ?? null,
     nextDueAmount: loan.paymentSchedules[0] ? Number(loan.paymentSchedules[0].totalDue) - Number(loan.paymentSchedules[0].paidAmount) : null,
   }));

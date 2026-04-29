@@ -28,22 +28,14 @@ export function SettingsView() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [initialized, setInitialized] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ data: Setting[] }>({
     queryKey: ["admin-settings"],
     queryFn: () => fetch("/api/admin/settings").then(r => r.json()),
-    onSuccess: (data: any) => {
-      if (!initialized) {
-        const map: Record<string, string> = {};
-        (data?.data ?? []).forEach((s: Setting) => { map[s.key] = s.value; });
-        setValues(map);
-        setInitialized(true);
-      }
-    },
-  } as any);
+  });
 
   const settings: Setting[] = data?.data ?? [];
 
-  // Initialize from query data if not done via onSuccess
+  // Initialize from query data
   if (!initialized && settings.length > 0) {
     const map: Record<string, string> = {};
     settings.forEach((s) => { map[s.key] = s.value; });
@@ -84,6 +76,7 @@ export function SettingsView() {
         </button>
       </div>
 
+      {/* System Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
         {settings.map((setting) => (
           <div key={setting.key} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start py-4 border-b border-gray-50 last:border-0">

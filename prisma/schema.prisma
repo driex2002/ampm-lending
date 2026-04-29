@@ -33,8 +33,13 @@ enum LoanStatus {
 enum PaymentFrequency {
   DAILY
   WEEKLY
-  BIWEEKLY
+  SEMI_MONTHLY // twice a month (~every 15 days)
   MONTHLY
+  QUARTERLY    // every 3 months
+  SEMI_ANNUAL  // every 6 months
+  YEARLY
+  // ── Legacy values kept for PostgreSQL backward-compat ──
+  BIWEEKLY
   CUSTOM
 }
 
@@ -236,10 +241,14 @@ model Loan {
   interestRate     Decimal  @db.Decimal(10, 4) // rate applied to THIS loan
   interestRateType RateType
 
-  // Term
+  // Term — stored directly on the loan (frequency + number of periods)
+  paymentFrequency PaymentFrequency? // e.g. MONTHLY
+  totalPeriods     Int?              // e.g. 12
+
+  // Legacy: keep for backward compat with existing loans
   termId       String?
   term         LoanTerm? @relation(fields: [termId], references: [id])
-  customTermDescription String? // if no preset term
+  customTermDescription String?
 
   // Penalty
   penaltyAmount Decimal     @db.Decimal(15, 2) @default(0)

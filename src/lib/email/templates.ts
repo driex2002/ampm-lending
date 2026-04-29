@@ -320,6 +320,11 @@ export function passwordResetTemplate(params: {
         Login Now →
       </a>
     </div>
+
+    <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+      Or copy this link into your browser:<br/>
+      <a href="${params.loginUrl}" style="color:#3b82f6;word-break:break-all;">${params.loginUrl}</a>
+    </p>
   `;
 
   return {
@@ -379,5 +384,67 @@ export function loanCreatedTemplate(params: {
   return {
     subject: `New Loan Created – ${params.loanNumber} | AMPM Lending`,
     html: baseTemplate(content, "Loan Created"),
+  };
+}
+
+// ---------------------------------------------------------------
+// Template: Loan Completed (Fully Paid)
+// ---------------------------------------------------------------
+
+export function loanCompletedTemplate(params: {
+  firstName: string;
+  loanNumber: string;
+  principalAmount: number;
+  totalPaid: number;
+  completedAt: string;
+  currency?: string;
+}): { subject: string; html: string } {
+  const c = params.currency ?? "₱";
+  const fmt = (n: number) =>
+    `${c}${n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const content = `
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="display:inline-block;background:#dcfce7;border-radius:50%;width:72px;height:72px;line-height:72px;font-size:36px;text-align:center;">🎉</div>
+      <h2 style="color:#15803d;margin:12px 0 4px;font-size:22px;">Loan Fully Paid!</h2>
+      <p style="color:#64748b;font-size:13px;margin:0;">Congratulations, you are debt-free with AMPM Lending.</p>
+    </div>
+
+    <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 24px;">
+      Dear <strong>${params.firstName}</strong>, we are pleased to confirm that your loan
+      <strong>${params.loanNumber}</strong> has been <strong>fully settled</strong> as of
+      <strong>${params.completedAt}</strong>. Thank you for your commitment!
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #bbf7d0;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+      <thead>
+        <tr style="background:#16a34a;">
+          <th colspan="2" style="color:#fff;padding:10px 12px;font-size:13px;text-align:left;">Loan Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${infoRow("Loan Number", params.loanNumber, true)}
+        ${infoRow("Original Principal", fmt(params.principalAmount))}
+        ${infoRow("Total Amount Paid", fmt(params.totalPaid), true)}
+        ${infoRow("Completed On", params.completedAt)}
+        ${infoRow("Outstanding Balance", fmt(0), true)}
+      </tbody>
+    </table>
+
+    <div style="background:#dcfce7;border-left:4px solid #16a34a;border-radius:4px;padding:16px;margin-bottom:16px;text-align:center;">
+      <p style="margin:0;font-size:14px;color:#15803d;font-weight:600;">
+        Your loan account is now closed. No further payments are required.
+      </p>
+    </div>
+
+    <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+      Please keep this email as your official loan completion record.<br/>
+      Thank you for choosing AMPM Lending!
+    </p>
+  `;
+
+  return {
+    subject: `🎉 Loan Fully Paid – ${params.loanNumber} | AMPM Lending`,
+    html: baseTemplate(content, "Loan Fully Paid"),
   };
 }

@@ -51,16 +51,22 @@ export interface SendEmailOptions {
 export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
   try {
     const transport = getTransporter();
-    await transport.sendMail({
-      from: process.env.EMAIL_FROM ?? `AMPM Lending <noreply@ampmlending.com>`,
+    const fromName = process.env.EMAIL_FROM_NAME ?? "AMPM Lending";
+    const fromAddress = process.env.SMTP_USER ?? "";
+    const from = process.env.EMAIL_FROM ?? `${fromName} <${fromAddress}>`;
+
+    const info = await transport.sendMail({
+      from,
       to: options.to,
       subject: options.subject,
       html: options.html,
-      text: options.text,
+      text: options.text ?? options.html.replace(/<[^>]+>/g, ""),
     });
+    console.log(`[Email] Sent to ${options.to} — messageId: ${info.messageId}`);
     return true;
-  } catch (error) {
-    console.error("[Email] Send failed:", error);
+  } catch (error: any) {
+    console.error("[Email] Send failed:", error?.message ?? error);
+    if (error?.responseCode) console.error("[Email] SMTP response code:", error.responseCode, error.response);
     return false;
   }
 }
@@ -89,7 +95,7 @@ export async function sendNotification(
       recipientId: payload.recipientId,
       recipientEmail: payload.recipientEmail,
       subject: payload.subject,
-      metadata: payload.metadata,
+      metadata: payload.metadata as any,
     },
   });
 

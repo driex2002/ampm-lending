@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
             cellphone: true,
           },
         },
-        term: { select: { name: true, frequency: true } },
+        term: { select: { name: true, frequency: true, totalPeriods: true } },
         paymentSchedules: {
           where: { status: { in: ["PENDING", "OVERDUE", "PARTIAL"] } },
           orderBy: { dueDate: "asc" },
@@ -90,6 +90,8 @@ export async function GET(req: NextRequest) {
 
   const data = loans.map((loan) => ({
     ...loan,
+    paymentFrequency: loan.paymentFrequency ?? loan.term?.frequency ?? null,
+    totalPeriods: loan.totalPeriods ?? loan.term?.totalPeriods ?? null,
     nextDueDate: loan.paymentSchedules[0]?.dueDate ?? null,
     nextDueAmount: loan.paymentSchedules[0]?.totalDue ?? null,
   }));
@@ -121,21 +123,13 @@ export async function POST(req: NextRequest) {
   });
   if (!borrower) return notFound("Active borrower not found");
 
-  // Verify term if provided
-  let term = null;
-  if (data.termId) {
-    term = await db.loanTerm.findUnique({ where: { id: data.termId, isActive: true } });
-    if (!term) return notFound("Loan term not found");
-  }
-
   // Calculate loan schedule
   const calc = calculateLoan({
     principalAmount: data.principalAmount,
     interestRate: data.interestRate,
     interestRateType: data.interestRateType as any,
-    frequency: (term?.frequency ?? "MONTHLY") as any,
-    totalPeriods: term?.totalPeriods ?? 1,
-    intervalDays: term?.intervalDays ?? undefined,
+    frequency: data.paymentFrequency as any,
+    totalPeriods: data.totalPeriods,
     startDate: new Date(data.startDate),
   });
 
@@ -157,8 +151,8 @@ export async function POST(req: NextRequest) {
           totalPaid: 0,
           interestRate: data.interestRate,
           interestRateType: data.interestRateType as any,
-          termId: data.termId ?? null,
-          customTermDescription: data.customTermDescription ?? null,
+          paymentFrequency: data.paymentFrequency as any,
+          totalPeriods: data.totalPeriods,
           penaltyAmount: data.penaltyAmount ?? 0,
           penaltyType: (data.penaltyType ?? null) as any,
           graceDays: data.graceDays ?? 0,
@@ -202,7 +196,7 @@ export async function POST(req: NextRequest) {
         principalAmount: calc.principalAmount,
         totalAmount: calc.totalAmount,
         interestRate: data.interestRate,
-        termName: term?.name ?? data.customTermDescription ?? "Custom",
+        termName: `${data.paymentFrequency.replace(/_/g, " ")} × ${data.totalPeriods}`,
         startDate: format(new Date(data.startDate), "MMM dd, yyyy"),
         firstDueDate: format(calc.schedule[0].dueDate, "MMM dd, yyyy"),
         firstDueAmount: calc.schedule[0].totalDue,

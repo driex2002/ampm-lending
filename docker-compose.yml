@@ -35,15 +35,22 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ampm}:${POSTGRES_PASSWORD:-ampm_password}@postgres:5432/${POSTGRES_DB:-ampm_lending}?schema=public
       DIRECT_URL: postgresql://${POSTGRES_USER:-ampm}:${POSTGRES_PASSWORD:-ampm_password}@postgres:5432/${POSTGRES_DB:-ampm_lending}?schema=public
       # Auth
+      AUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      AUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       # Google OAuth (optional)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      AUTH_GOOGLE_ID: ${GOOGLE_CLIENT_ID:-}
+      AUTH_GOOGLE_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Email (Gmail SMTP)
       GMAIL_USER: ${GMAIL_USER:-}
       GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      SMTP_USER: ${GMAIL_USER:-}
+      SMTP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-AMPM Lending}
+      EMAIL_FROM: ${EMAIL_FROM:-}
       # App
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-AMPM Lending}

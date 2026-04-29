@@ -15,8 +15,8 @@ async function main() {
   // -----------------------------------------------------------
   // 1. ADMIN ACCOUNT
   // -----------------------------------------------------------
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@ampmlending.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@AMPM2024!";
+  const adminEmail = process.env.ADMIN_EMAIL ?? "driex2002@gmail.com";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "pass1234";
   const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
   const admin = await prisma.user.upsert({
@@ -46,54 +46,32 @@ async function main() {
   // 2. DEFAULT LOAN TERMS
   // -----------------------------------------------------------
   const loanTerms = [
-    {
-      name: "Daily – 30 Days",
-      frequency: "DAILY" as const,
-      totalPeriods: 30,
-      description: "Daily payments over 30 days",
-    },
-    {
-      name: "Weekly – 4 Weeks",
-      frequency: "WEEKLY" as const,
-      totalPeriods: 4,
-      description: "Weekly payments over 4 weeks (1 month)",
-    },
-    {
-      name: "Weekly – 8 Weeks",
-      frequency: "WEEKLY" as const,
-      totalPeriods: 8,
-      description: "Weekly payments over 8 weeks (2 months)",
-    },
-    {
-      name: "Bi-Weekly – 6 Payments",
-      frequency: "BIWEEKLY" as const,
-      totalPeriods: 6,
-      description: "Bi-weekly payments over 3 months",
-    },
-    {
-      name: "Monthly – 3 Months",
-      frequency: "MONTHLY" as const,
-      totalPeriods: 3,
-      description: "Monthly payments over 3 months",
-    },
-    {
-      name: "Monthly – 6 Months",
-      frequency: "MONTHLY" as const,
-      totalPeriods: 6,
-      description: "Monthly payments over 6 months",
-    },
-    {
-      name: "Monthly – 12 Months",
-      frequency: "MONTHLY" as const,
-      totalPeriods: 12,
-      description: "Monthly payments over 12 months",
-    },
-    {
-      name: "Custom Schedule",
-      frequency: "CUSTOM" as const,
-      totalPeriods: 1,
-      description: "Fully custom payment schedule configured per borrower",
-    },
+    // ── Daily ───────────────────────────────────────────────
+    { name: "Daily × 7",  frequency: "DAILY" as const, totalPeriods: 7,  description: "7 daily payments (1 week)" },
+    { name: "Daily × 15", frequency: "DAILY" as const, totalPeriods: 15, description: "15 daily payments (2 weeks)" },
+    { name: "Daily × 30", frequency: "DAILY" as const, totalPeriods: 30, description: "30 daily payments (1 month)" },
+    // ── Weekly ──────────────────────────────────────────────
+    { name: "Weekly × 4",  frequency: "WEEKLY" as const, totalPeriods: 4,  description: "4 weekly payments (1 month)" },
+    { name: "Weekly × 8",  frequency: "WEEKLY" as const, totalPeriods: 8,  description: "8 weekly payments (2 months)" },
+    { name: "Weekly × 12", frequency: "WEEKLY" as const, totalPeriods: 12, description: "12 weekly payments (3 months)" },
+    // ── Semi-Monthly ────────────────────────────────────────
+    { name: "Semi-Monthly × 6",  frequency: "SEMI_MONTHLY" as const, totalPeriods: 6,  description: "6 semi-monthly payments (3 months)" },
+    { name: "Semi-Monthly × 12", frequency: "SEMI_MONTHLY" as const, totalPeriods: 12, description: "12 semi-monthly payments (6 months)" },
+    { name: "Semi-Monthly × 24", frequency: "SEMI_MONTHLY" as const, totalPeriods: 24, description: "24 semi-monthly payments (1 year)" },
+    // ── Monthly ─────────────────────────────────────────────
+    { name: "Monthly × 3",  frequency: "MONTHLY" as const, totalPeriods: 3,  description: "3 monthly payments" },
+    { name: "Monthly × 6",  frequency: "MONTHLY" as const, totalPeriods: 6,  description: "6 monthly payments" },
+    { name: "Monthly × 12", frequency: "MONTHLY" as const, totalPeriods: 12, description: "12 monthly payments (1 year)" },
+    { name: "Monthly × 24", frequency: "MONTHLY" as const, totalPeriods: 24, description: "24 monthly payments (2 years)" },
+    // ── Quarterly ───────────────────────────────────────────
+    { name: "Quarterly × 4", frequency: "QUARTERLY" as const, totalPeriods: 4, description: "4 quarterly payments (1 year)" },
+    { name: "Quarterly × 8", frequency: "QUARTERLY" as const, totalPeriods: 8, description: "8 quarterly payments (2 years)" },
+    // ── Semi-Annual ─────────────────────────────────────────
+    { name: "Semi-Annual × 2", frequency: "SEMI_ANNUAL" as const, totalPeriods: 2, description: "2 semi-annual payments (1 year)" },
+    { name: "Semi-Annual × 4", frequency: "SEMI_ANNUAL" as const, totalPeriods: 4, description: "4 semi-annual payments (2 years)" },
+    // ── Yearly ──────────────────────────────────────────────
+    { name: "Yearly × 1", frequency: "YEARLY" as const, totalPeriods: 1, description: "1 yearly payment" },
+    { name: "Yearly × 2", frequency: "YEARLY" as const, totalPeriods: 2, description: "2 yearly payments" },
   ];
 
   for (const term of loanTerms) {

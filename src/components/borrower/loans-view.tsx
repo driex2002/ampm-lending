@@ -8,7 +8,7 @@ import Link from "next/link";
 interface Loan {
   id: string; loanNumber: string; principalAmount: number; outstandingBalance: number;
   totalAmount: number; status: string; isOverdue: boolean; startDate: string;
-  term: { name: string } | null;
+  paymentFrequency: string | null; totalPeriods: number | null;
 }
 
 export function BorrowerLoansView() {
@@ -41,7 +41,11 @@ export function BorrowerLoansView() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-mono font-semibold text-brand-700">{loan.loanNumber}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">{loan.term?.name ?? "Custom Term"} · Started {formatDate(loan.startDate)}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {loan.paymentFrequency
+                        ? `${loan.paymentFrequency.replace(/_/g, " ")} × ${loan.totalPeriods} terms`
+                        : "—"} · Started {formatDate(loan.startDate)}
+                    </p>
                   </div>
                   <div className="text-right">
                     {loan.isOverdue ? (

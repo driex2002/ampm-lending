@@ -54,7 +54,7 @@ export default auth(function middleware(req) {
   // ---------------------------------------------------------------
   // Force password change — can only visit /change-password
   // ---------------------------------------------------------------
-  if (mustChangePassword && path !== "/change-password") {
+  if (mustChangePassword && path !== "/change-password" && !path.startsWith("/api/")) {
     return NextResponse.redirect(new URL("/change-password", req.url));
   }
 

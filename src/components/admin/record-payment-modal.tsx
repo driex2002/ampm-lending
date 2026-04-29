@@ -42,7 +42,7 @@ export function RecordPaymentModal({ loan, onClose, onSuccess }: Props) {
         const res = await fetch("/api/admin/payments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify({ ...data, allowOverpayment: true }),
         });
         const json = await res.json();
         if (!res.ok) { toast.error(json.error ?? "Failed to record payment"); return; }
@@ -95,11 +95,11 @@ export function RecordPaymentModal({ loan, onClose, onSuccess }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Penalty Waiver</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Waiver</label>
             <select {...register("waiverType")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
               <option value="">No Waiver</option>
-              <option value="FULL_LOAN">Full Loan Waiver</option>
-              <option value="PER_PAYMENT">This Payment Only</option>
+              <option value="PER_PAYMENT">Waive Penalty (This Payment Only)</option>
+              <option value="FULL_LOAN">Waive Interest (Full Loan)</option>
             </select>
           </div>
 

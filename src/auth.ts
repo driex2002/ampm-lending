@@ -43,6 +43,7 @@ export const authConfig: NextAuthConfig = {
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: "consent",
@@ -135,6 +136,8 @@ export const authConfig: NextAuthConfig = {
           role: user.role,
           mustChangePassword: user.mustChangePassword,
           isActive: user.isActive,
+          firstName: user.firstName,
+          lastName: user.lastName,
         };
       },
     }),

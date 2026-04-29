@@ -32,14 +32,14 @@ export async function createAuditLog(options: AuditOptions): Promise<void> {
         action: options.action,
         performedBy: options.performedBy,
         performedByRole: options.performedByRole,
-        oldValue: options.oldValue ?? undefined,
-        newValue: options.newValue ?? undefined,
+        oldValue: (options.oldValue ?? undefined) as any,
+        newValue: (options.newValue ?? undefined) as any,
         reason: options.reason,
         targetUserId: options.targetUserId,
         loanId: options.loanId,
         ipAddress: options.ipAddress,
         userAgent: options.userAgent,
-        metadata: options.metadata ?? undefined,
+        metadata: (options.metadata ?? undefined) as any,
       },
     });
   } catch (error) {

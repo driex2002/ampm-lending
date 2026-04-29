@@ -10,7 +10,7 @@
  */
 
 import { PaymentFrequency, RateType } from "@prisma/client";
-import { addDays, addWeeks, addMonths } from "date-fns";
+import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { toDecimal } from "@/lib/utils";
 
 // ----------------------------------------------------------------
@@ -62,10 +62,19 @@ function getNextDueDate(
       return addDays(current, 1);
     case "WEEKLY":
       return addWeeks(current, 1);
-    case "BIWEEKLY":
-      return addWeeks(current, 2);
+    case "SEMI_MONTHLY":
+      return addDays(current, 15);
     case "MONTHLY":
       return addMonths(current, 1);
+    case "QUARTERLY":
+      return addMonths(current, 3);
+    case "SEMI_ANNUAL":
+      return addMonths(current, 6);
+    case "YEARLY":
+      return addYears(current, 1);
+    // Legacy
+    case "BIWEEKLY":
+      return addWeeks(current, 2);
     case "CUSTOM":
       return addDays(current, intervalDays ?? 30);
     default:
@@ -96,6 +105,7 @@ export function calculateLoan(input: LoanCalculationInput): LoanSummary {
   let remainingBalance = principalAmount;
 
   // ---- Per-period interest ----
+  const totalExpectedInterest = toDecimal(principalAmount * rate); // exact total before splitting
   const perPeriodInterest = (() => {
     switch (interestRateType) {
       case "PERCENTAGE_PER_PERIOD":
@@ -126,6 +136,10 @@ export function calculateLoan(input: LoanCalculationInput): LoanSummary {
 
     if (interestRateType === "DIMINISHING") {
       interestDue = toDecimal(remainingBalance * rate);
+    } else if (i === totalPeriods && interestRateType === "FLAT_RATE") {
+      // Last period absorbs any accumulated rounding difference so total interest
+      // equals exactly rate% of principal (e.g. 2000 * 20% = 400.00, not 400.20)
+      interestDue = toDecimal(totalExpectedInterest - totalInterest);
     } else {
       interestDue = perPeriodInterest;
     }
@@ -176,7 +190,8 @@ export interface PaymentApplicationInput {
     principalDue: number;
     interestDue: number;
     penaltyDue: number;
-    waivedAmount: number;
+    waivedAmount: number;   // interest waiver (FULL_LOAN)
+    waivedPenalty?: number; // penalty waiver (PER_PAYMENT)
   };
   allowOverpayment?: boolean;
 }
@@ -186,6 +201,7 @@ export interface PaymentApplicationResult {
   interestPaid: number;
   penaltyPaid: number;
   waivedInterest: number;
+  waivedPenalty: number;
   totalApplied: number;
   newBalance: number;
   isOverpayment: boolean;
@@ -196,10 +212,12 @@ export function applyPayment(
   input: PaymentApplicationInput
 ): PaymentApplicationResult {
   const { paymentAmount, outstandingBalance, currentSchedule, allowOverpayment = false } = input;
-  const { principalDue, interestDue, penaltyDue, waivedAmount } = currentSchedule;
+  const { principalDue, interestDue, penaltyDue, waivedAmount, waivedPenalty = 0 } = currentSchedule;
 
+  // Interest is always collected in full; penalty can be waived per-payment
   const effectiveInterest = toDecimal(interestDue - waivedAmount);
-  const scheduledTotal = toDecimal(principalDue + effectiveInterest + penaltyDue);
+  const effectivePenalty = toDecimal(Math.max(0, penaltyDue - waivedPenalty));
+  const scheduledTotal = toDecimal(principalDue + effectiveInterest + effectivePenalty);
 
   const isOverpayment = paymentAmount > scheduledTotal && !allowOverpayment;
   const overpaymentAmount = Math.max(0, toDecimal(paymentAmount - scheduledTotal));
@@ -207,7 +225,7 @@ export function applyPayment(
   // Apply in order: penalty → interest → principal
   let remaining = paymentAmount;
 
-  const penaltyPaid = Math.min(remaining, penaltyDue);
+  const penaltyPaid = Math.min(remaining, effectivePenalty);
   remaining = toDecimal(remaining - penaltyPaid);
 
   const interestPaid = Math.min(remaining, effectiveInterest);
@@ -217,13 +235,16 @@ export function applyPayment(
   remaining = toDecimal(remaining - principalPaid);
 
   const totalApplied = toDecimal(penaltyPaid + interestPaid + principalPaid);
-  const newBalance = toDecimal(Math.max(0, outstandingBalance - principalPaid));
+  // Outstanding balance represents total amount still owed (principal + future interest).
+  // Decrement by the full payment applied so the balance reaches 0 when the loan is done.
+  const newBalance = toDecimal(Math.max(0, outstandingBalance - totalApplied));
 
   return {
     principalPaid,
     interestPaid,
     penaltyPaid,
     waivedInterest: waivedAmount,
+    waivedPenalty,
     totalApplied,
     newBalance,
     isOverpayment,
