@@ -18,6 +18,9 @@ declare module "next-auth" {
       isActive: boolean;
       firstName: string;
       lastName: string;
+      nickname?: string | null;
+      avatarUrl?: string | null;
+      isSuperAdmin?: boolean;
     };
   }
 
@@ -28,6 +31,9 @@ declare module "next-auth" {
     isActive: boolean;
     firstName: string;
     lastName: string;
+    nickname?: string | null;
+    avatarUrl?: string | null;
+    isSuperAdmin?: boolean;
   }
 }
 
@@ -39,5 +45,8 @@ declare module "next-auth/jwt" {
     isActive: boolean;
     firstName: string;
     lastName: string;
+    nickname?: string | null;
+    avatarUrl?: string | null;
+    isSuperAdmin?: boolean;
   }
 }

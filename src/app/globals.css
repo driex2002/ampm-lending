@@ -24,6 +24,94 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* ── Brand palette: Blue (default) ── */
+    --brand-50:  214 100% 97%;
+    --brand-100: 214 95%  93%;
+    --brand-200: 213 97%  87%;
+    --brand-300: 213 94%  78%;
+    --brand-400: 213 94%  68%;
+    --brand-500: 217 91%  60%;
+    --brand-600: 221 83%  53%;
+    --brand-700: 224 76%  48%;
+    --brand-800: 226 71%  40%;
+    --brand-900: 226 71%  34%;
+    --brand-950: 229 84%  23%;
+  }
+
+  /* ── Emerald ── */
+  [data-scheme="emerald"] {
+    --brand-50:  152 81% 96%;
+    --brand-100: 149 80% 90%;
+    --brand-200: 152 76% 80%;
+    --brand-300: 156 72% 67%;
+    --brand-400: 158 64% 52%;
+    --brand-500: 160 84% 39%;
+    --brand-600: 161 94% 30%;
+    --brand-700: 162 94% 24%;
+    --brand-800: 163 88% 20%;
+    --brand-900: 164 86% 16%;
+    --brand-950: 166 91%  9%;
+  }
+
+  /* ── Violet ── */
+  [data-scheme="violet"] {
+    --brand-50:  250 100% 97%;
+    --brand-100: 251 91%  95%;
+    --brand-200: 251 95%  92%;
+    --brand-300: 252 95%  85%;
+    --brand-400: 255 92%  76%;
+    --brand-500: 258 90%  66%;
+    --brand-600: 262 83%  58%;
+    --brand-700: 263 70%  50%;
+    --brand-800: 263 69%  42%;
+    --brand-900: 263 67%  34%;
+    --brand-950: 265 82%  21%;
+  }
+
+  /* ── Rose ── */
+  [data-scheme="rose"] {
+    --brand-50:  356 100% 97%;
+    --brand-100: 356 100% 94%;
+    --brand-200: 353 96%  90%;
+    --brand-300: 353 96%  82%;
+    --brand-400: 351 95%  71%;
+    --brand-500: 350 89%  60%;
+    --brand-600: 347 77%  50%;
+    --brand-700: 345 83%  41%;
+    --brand-800: 343 80%  35%;
+    --brand-900: 341 75%  30%;
+    --brand-950: 343 88%  16%;
+  }
+
+  /* ── Amber ── */
+  [data-scheme="amber"] {
+    --brand-50:  48  100% 96%;
+    --brand-100: 48  97%  89%;
+    --brand-200: 48  97%  77%;
+    --brand-300: 46  97%  65%;
+    --brand-400: 43  96%  56%;
+    --brand-500: 38  92%  50%;
+    --brand-600: 32  95%  44%;
+    --brand-700: 26  90%  37%;
+    --brand-800: 23  83%  31%;
+    --brand-900: 22  78%  26%;
+    --brand-950: 21  92%  14%;
+  }
+
+  /* ── Slate ── */
+  [data-scheme="slate"] {
+    --brand-50:  210 40%  98%;
+    --brand-100: 210 40%  96%;
+    --brand-200: 214 32%  91%;
+    --brand-300: 213 27%  84%;
+    --brand-400: 215 20%  65%;
+    --brand-500: 215 16%  47%;
+    --brand-600: 215 19%  35%;
+    --brand-700: 215 25%  27%;
+    --brand-800: 217 33%  17%;
+    --brand-900: 222 47%  11%;
+    --brand-950: 229 84%   5%;
   }
 
   .dark {
@@ -92,3 +180,61 @@
     border-radius: 3px;
   }
 }
+
+/* ─────────────────────────────────────────
+   Dark mode: override Tailwind utility
+   classes that use hardcoded gray/white
+   ───────────────────────────────────────── */
+.dark .bg-white          { background-color: hsl(222 47% 10%) !important; }
+.dark .bg-gray-50        { background-color: hsl(223 47%  7%) !important; }
+.dark .bg-gray-100       { background-color: hsl(220 40% 13%) !important; }
+.dark .bg-gray-200       { background-color: hsl(217 33% 18%) !important; }
+
+.dark .hover\:bg-gray-50:hover  { background-color: hsl(220 40% 13%) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: hsl(217 33% 18%) !important; }
+
+.dark .text-gray-900 { color: hsl(210 40% 96%) !important; }
+.dark .text-gray-800 { color: hsl(210 40% 90%) !important; }
+.dark .text-gray-700 { color: hsl(210 35% 82%) !important; }
+.dark .text-gray-600 { color: hsl(210 25% 72%) !important; }
+.dark .text-gray-500 { color: hsl(215 20% 62%) !important; }
+.dark .text-gray-400 { color: hsl(215 18% 52%) !important; }
+
+.dark .border-gray-50  { border-color: hsl(222 47% 14%) !important; }
+.dark .border-gray-100 { border-color: hsl(217 33% 18%) !important; }
+.dark .border-gray-200 { border-color: hsl(215 25% 24%) !important; }
+.dark .border-gray-300 { border-color: hsl(215 25% 32%) !important; }
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: hsl(222 47% 13%);
+  color: hsl(210 40% 90%);
+  border-color: hsl(217 33% 25%);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(215 20% 50%);
+}
+
+/* Status badges — ensure readable in dark mode */
+.dark .bg-green-100  { background-color: hsl(152 50% 12%) !important; }
+.dark .text-green-800 { color: hsl(152 60% 65%) !important; }
+.dark .text-green-700 { color: hsl(152 60% 60%) !important; }
+.dark .bg-yellow-100 { background-color: hsl(48 50% 12%) !important; }
+.dark .text-yellow-800 { color: hsl(48 80% 65%) !important; }
+.dark .bg-red-100    { background-color: hsl(0 50% 12%) !important; }
+.dark .text-red-800  { color: hsl(0 80% 70%) !important; }
+.dark .text-red-600  { color: hsl(0 80% 65%) !important; }
+.dark .bg-blue-100   { background-color: hsl(214 50% 12%) !important; }
+.dark .text-blue-800 { color: hsl(214 80% 70%) !important; }
+.dark .bg-purple-100 { background-color: hsl(262 40% 14%) !important; }
+.dark .text-purple-800 { color: hsl(262 70% 72%) !important; }
+.dark .bg-orange-100 { background-color: hsl(25 50% 12%) !important; }
+.dark .text-orange-800 { color: hsl(25 80% 65%) !important; }
+.dark .bg-amber-50   { background-color: hsl(48 50% 10%) !important; }
+.dark .text-amber-700 { color: hsl(38 80% 60%) !important; }
+.dark .bg-green-50   { background-color: hsl(152 50% 8%)  !important; }
+.dark .text-green-700 { color: hsl(152 60% 60%) !important; }
+

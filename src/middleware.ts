@@ -10,7 +10,11 @@
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
+
+// Use edge-safe config — no Node.js-only imports (no prisma/bcrypt/nodemailer)
+const { auth } = NextAuth(authConfig);
 
 export default auth(function middleware(req) {
   const { nextUrl, auth: session } = req as NextRequest & {

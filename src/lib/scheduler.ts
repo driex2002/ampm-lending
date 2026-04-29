@@ -18,7 +18,7 @@
 import "server-only";
 import { format, startOfDay, endOfDay, addDays } from "date-fns";
 import { db } from "@/lib/db";
-import { sendNotification } from "@/lib/email/mailer";
+import { sendNotification, isNotifEnabled } from "@/lib/email/mailer";
 import {
   paymentReminderTemplate,
   overdueAlertTemplate,
@@ -56,6 +56,10 @@ export async function sendDueDateReminders(): Promise<void> {
 
     for (const schedule of schedules) {
       const { id: borrowerId, email, firstName } = schedule.loan.borrower;
+
+      // Skip if borrower has disabled payment reminders
+      const reminderEnabled = await isNotifEnabled(borrowerId, "payment_reminder");
+      if (!reminderEnabled) continue;
 
       // Skip if already sent this type today for this schedule
       const alreadySent = await db.notification.findFirst({
@@ -127,6 +131,10 @@ export async function sendOverdueAlerts(): Promise<void> {
 
   for (const schedule of overdueSchedules) {
     const { id: borrowerId, email, firstName } = schedule.loan.borrower;
+
+    // Skip if borrower has disabled overdue alerts
+    const overdueEnabled = await isNotifEnabled(borrowerId, "overdue_alert");
+    if (!overdueEnabled) continue;
 
     // Skip if already alerted today for this schedule
     const alreadySent = await db.notification.findFirst({

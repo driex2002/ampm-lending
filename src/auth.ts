@@ -7,6 +7,9 @@
  * - Google OAuth: email must EXACTLY match registered system email
  * - mustChangePassword enforced in session callbacks
  * - login attempt tracking + account lockout in credentials authorize
+ *
+ * Edge-safe callbacks (jwt, session) live in auth.config.ts.
+ * This file is Node.js-only and must NOT be imported by middleware.
  */
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -15,7 +18,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 import { auditLogin } from "@/lib/audit";
-import type { NextAuthConfig } from "next-auth";
+import { sendNotification, isNotifEnabled } from "@/lib/email/mailer";
+import { loginAlertTemplate } from "@/lib/email/templates";
+import { format } from "date-fns";
+import { authConfig } from "./auth.config";
 
 const MAX_LOGIN_ATTEMPTS = parseInt(
   process.env.MAX_LOGIN_ATTEMPTS ?? "5",
@@ -26,16 +32,14 @@ const LOCKOUT_MINUTES = parseInt(
   10
 );
 
-export const authConfig: NextAuthConfig = {
+// Super admin is always allowed to login and cannot be suspended/deleted
+export const SUPER_ADMIN_EMAIL = (
+  process.env.SUPER_ADMIN_EMAIL ?? "driex2002@gmail.com"
+).toLowerCase();
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(db),
-  session: {
-    strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 hours
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
   providers: [
     // ----------------------------------------------------------
     // GOOGLE OAUTH
@@ -72,13 +76,21 @@ export const authConfig: NextAuthConfig = {
 
         const user = await db.user.findUnique({
           where: { email },
+          select: {
+            id: true, email: true, role: true, password: true,
+            mustChangePassword: true, isActive: true, deletedAt: true,
+            firstName: true, lastName: true, nickname: true, avatarUrl: true,
+            loginAttempts: true, lockedUntil: true,
+          },
         });
 
         if (!user || !user.password) {
           throw new Error("Invalid email or password");
         }
 
-        if (!user.isActive || user.deletedAt) {
+        // Super admin can always login regardless of isActive flag
+        const isSuperAdmin = email === SUPER_ADMIN_EMAIL;
+        if (!isSuperAdmin && (!user.isActive || user.deletedAt)) {
           throw new Error("Account is inactive. Contact your administrator.");
         }
 
@@ -129,6 +141,26 @@ export const authConfig: NextAuthConfig = {
 
         await auditLogin(user.id, user.role);
 
+        // Fire login alert (borrowers only, non-blocking)
+        if (user.role === "BORROWER") {
+          const { subject, html } = loginAlertTemplate({
+            firstName: user.firstName,
+            loginTime: format(new Date(), "MMM dd, yyyy hh:mm:ss a"),
+          });
+          isNotifEnabled(user.id, "login_alert").then((enabled) => {
+            if (enabled) {
+              sendNotification({
+                recipientId: user.id,
+                recipientEmail: user.email,
+                type: "LOGIN_ALERT",
+                subject,
+                html,
+                metadata: { loginTime: new Date().toISOString() },
+              }).catch(console.error);
+            }
+          }).catch(console.error);
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -138,6 +170,9 @@ export const authConfig: NextAuthConfig = {
           isActive: user.isActive,
           firstName: user.firstName,
           lastName: user.lastName,
+          nickname: user.nickname ?? null,
+          avatarUrl: user.avatarUrl ?? null,
+          isSuperAdmin: email === SUPER_ADMIN_EMAIL,
         };
       },
     }),
@@ -158,7 +193,8 @@ export const authConfig: NextAuthConfig = {
           return "/login?error=GoogleEmailNotRegistered";
         }
 
-        if (!existingUser.isActive || existingUser.deletedAt) {
+        const isSuperAdmin = existingUser.email.toLowerCase() === SUPER_ADMIN_EMAIL;
+        if (!isSuperAdmin && (!existingUser.isActive || existingUser.deletedAt)) {
           return "/login?error=AccountInactive";
         }
 
@@ -169,16 +205,39 @@ export const authConfig: NextAuthConfig = {
         });
 
         await auditLogin(existingUser.id, existingUser.role);
+
+        // Fire login alert for borrowers (non-blocking)
+        if (existingUser.role === "BORROWER") {
+          const { subject, html } = loginAlertTemplate({
+            firstName: existingUser.firstName,
+            loginTime: format(new Date(), "MMM dd, yyyy hh:mm:ss a"),
+          });
+          isNotifEnabled(existingUser.id, "login_alert").then((enabled) => {
+            if (enabled) {
+              sendNotification({
+                recipientId: existingUser.id,
+                recipientEmail: existingUser.email,
+                type: "LOGIN_ALERT",
+                subject,
+                html,
+                metadata: { loginTime: new Date().toISOString(), provider: "google" },
+              }).catch(console.error);
+            }
+          }).catch(console.error);
+        }
       }
       return true;
     },
 
     // -------------------------------------------------------
     // JWT: embed role & mustChangePassword into token
+    // (overrides the base jwt in authConfig to add DB enrichment
+    // for Google OAuth where user object lacks role/etc.)
     // -------------------------------------------------------
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        // Initial sign in
+        // Initial sign in — fetch full user data from DB
+        // (needed for Google OAuth where the user object is the OAuth profile)
         const dbUser = await db.user.findUnique({
           where: { email: token.email! },
           select: {
@@ -188,6 +247,8 @@ export const authConfig: NextAuthConfig = {
             isActive: true,
             firstName: true,
             lastName: true,
+            nickname: true,
+            avatarUrl: true,
           },
         });
 
@@ -198,32 +259,24 @@ export const authConfig: NextAuthConfig = {
           token.isActive = dbUser.isActive;
           token.firstName = dbUser.firstName;
           token.lastName = dbUser.lastName;
+          token.nickname = dbUser.nickname ?? null;
+          token.avatarUrl = dbUser.avatarUrl ?? null;
+          token.isSuperAdmin = (token.email ?? "").toLowerCase() === SUPER_ADMIN_EMAIL;
         }
       }
 
       if (trigger === "update" && session) {
-        // Allow session update (e.g., after password change)
-        token.mustChangePassword = session.mustChangePassword;
+        if (session.mustChangePassword !== undefined)
+          token.mustChangePassword = session.mustChangePassword;
+        if (session.nickname !== undefined) token.nickname = session.nickname;
+        if (session.avatarUrl !== undefined) token.avatarUrl = session.avatarUrl;
       }
 
       return token;
     },
 
-    // -------------------------------------------------------
-    // Session: expose token fields to client
-    // -------------------------------------------------------
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.mustChangePassword = token.mustChangePassword as boolean;
-        session.user.isActive = token.isActive as boolean;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
-      }
-      return session;
-    },
+    // session callback inherited from authConfig (no override needed)
+    session: authConfig.callbacks!.session!,
   },
-};
+});
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

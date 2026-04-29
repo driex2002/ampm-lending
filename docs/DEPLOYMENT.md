@@ -104,6 +104,13 @@ sudo certbot --nginx -d yourdomain.com
 docker exec -it ampm-app npx prisma db seed
 ```
 
+### 7. Rebuild after code changes
+
+```bash
+./rebuild.sh                  # standard rebuild (uses Docker layer cache)
+./rebuild.sh --clear-cache    # full rebuild without cache
+```
+
 ---
 
 ## Option C: Railway / Render
@@ -120,9 +127,14 @@ Both Railway and Render support Docker-based deployments. Simply:
 
 - [ ] Change default admin password (`Admin@AMPM2024!`)
 - [ ] Set strong `NEXTAUTH_SECRET` (32+ random chars)
+- [ ] Set `SUPER_ADMIN_EMAIL` to the permanent super-admin email address
 - [ ] Configure Gmail App Password for email notifications
 - [ ] Set `NEXTAUTH_URL` to the production URL
 - [ ] Enable Google OAuth if desired (add Authorized Redirect URI in GCP console)
+- [ ] Log in and visit **Admin → Settings → Branding** to:
+  - Set your app name
+  - Upload app icon and favicon
+  - Set login page and dashboard background images
 - [ ] Test loan creation → payment recording → email receipt flow
 - [ ] Verify audit logs are recording correctly
 - [ ] Set up database backups (pg_dump cron or Neon auto-backup)
@@ -132,16 +144,53 @@ Both Railway and Render support Docker-based deployments. Simply:
 ## Environment Variables for Production
 
 ```env
+# Database
 DATABASE_URL="postgresql://..."
 DIRECT_URL="postgresql://..."
+
+# Auth
 NEXTAUTH_SECRET="<openssl rand -base64 32>"
 NEXTAUTH_URL="https://yourdomain.com"
+
+# Super admin protection (this account cannot be deleted or deactivated)
+SUPER_ADMIN_EMAIL="admin@yourdomain.com"
+
+# Google OAuth (optional)
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
+
+# Email notifications (Gmail SMTP)
 GMAIL_USER="noreply@yourdomain.com"
 GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"
 EMAIL_FROM_NAME="AMPM Lending"
+
+# App
 NEXT_PUBLIC_APP_URL="https://yourdomain.com"
 NEXT_PUBLIC_APP_NAME="AMPM Lending"
 NODE_ENV="production"
 ```
+
+> **Note on `SUPER_ADMIN_EMAIL`**: This environment variable designates one account as permanently protected. The matching admin cannot be deactivated, deleted, or have their role downgraded via the UI. Set it to the email of your primary admin account.
+
+---
+
+## Branding System
+
+All branding settings are stored in the `system_settings` database table and can be changed live via **Admin → Settings** without a redeploy.
+
+| Setting | Where it appears |
+|---|---|
+| `app_name` | Sidebar header, login page heading, browser tab title |
+| `app_icon` | Sidebar header logo |
+| `app_favicon` | Browser tab favicon (dynamic, no rebuild needed) |
+| `login_bg` | Full-bleed background behind the login/change-password forms |
+| `login_bg_opacity` | How strongly the login background image shows (5–95%) |
+| `dashboard_bg` | Background behind all admin and borrower portal pages |
+| `dashboard_bg_opacity` | How strongly the dashboard background shows (2–50%) |
+
+Default background images are sourced from Unsplash (free under the [Unsplash License](https://unsplash.com/license)):
+- **Login**: Modern glass office / financial district
+- **Dashboard**: Professional business desk with documents
+
+Both images are stored as URLs in the DB by default; uploading a custom image converts them to base64 and stores inline.
+
