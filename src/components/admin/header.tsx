@@ -2,18 +2,29 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Bell } from "lucide-react";
+import { Bell, Menu, X } from "lucide-react";
 import { getInitials } from "@/lib/utils";
+import { useMobileMenu } from "./mobile-menu-context";
 
 export function AdminHeader() {
   const { data: session } = useSession();
   const firstName = session?.user?.nickname || session?.user?.firstName || "Admin";
   const lastName = session?.user?.nickname ? "" : (session?.user?.lastName ?? "");
   const avatarUrl = session?.user?.avatarUrl;
+  const { isOpen, toggleMenu } = useMobileMenu();
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0">
       <div className="flex items-center gap-3">
+        {/* Mobile menu button */}
+        <button
+          onClick={toggleMenu}
+          className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+          title={isOpen ? "Close menu" : "Open menu"}
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
         <h2 className="text-gray-800 font-semibold text-sm hidden sm:block">
           Welcome back, {firstName}
         </h2>

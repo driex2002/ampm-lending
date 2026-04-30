@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
+import { useMobileMenu } from "./mobile-menu-context";
 
 const navItems = [
   { href: "/admin/dashboard",  label: "Dashboard",  icon: SquaresFour   },
@@ -46,6 +47,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { iconWeight } = useTheme();
+  const { isOpen: mobileMenuOpen, closeMenu } = useMobileMenu();
 
   const { data } = useQuery<{ data: AppConfig }>({
     queryKey: ["app-config"],
@@ -57,13 +59,26 @@ export function AdminSidebar() {
   const appIcon = data?.data?.appIcon || "";
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col bg-brand-900 text-white transition-all duration-300 ease-in-out",
-        "hidden md:flex",
-        collapsed ? "w-16" : "w-64"
+    <>
+      {/* Mobile overlay backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => closeMenu()}
+          aria-hidden="true"
+        />
       )}
-    >
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "flex flex-col bg-brand-900 text-white transition-all duration-300 ease-in-out",
+          "fixed md:sticky top-0 h-screen md:h-auto",
+          "z-50 md:z-auto",
+          "md:flex",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          collapsed ? "w-16" : "w-64"
+        )}
+      >
       {/* Logo / header */}
       <div className={cn(
         "flex items-center h-16 px-4 border-b border-brand-700",
@@ -90,12 +105,12 @@ export function AdminSidebar() {
           )
         )}
 
-        {/* Collapse toggle in header */}
+        {/* Collapse toggle in header — hidden on mobile */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cn(
-            "flex items-center justify-center w-8 h-8 rounded-lg transition-colors flex-shrink-0",
+            "hidden md:flex items-center justify-center w-8 h-8 rounded-lg transition-colors flex-shrink-0",
             "text-brand-300 hover:text-white hover:bg-brand-700",
             collapsed && "mt-0"
           )}
@@ -112,6 +127,7 @@ export function AdminSidebar() {
             <Link
               key={href}
               href={href}
+              onClick={() => closeMenu()}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                 active
@@ -143,11 +159,11 @@ export function AdminSidebar() {
           {!collapsed && "Sign Out"}
         </button>
 
-        {/* Collapse / Expand — prominent banner button */}
+        {/* Collapse / Expand — hidden on mobile, shown on desktop */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-medium",
+            "hidden md:flex w-full items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-medium",
             "bg-brand-800/60 text-brand-300 hover:bg-brand-700 hover:text-white border border-brand-700/50",
             collapsed ? "justify-center" : "justify-between"
           )}
@@ -165,7 +181,16 @@ export function AdminSidebar() {
             </>
           )}
         </button>
+
+        {/* Close menu button — shown on mobile only */}
+        <button
+          onClick={() => closeMenu()}
+          className="md:hidden w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-medium bg-brand-800/60 text-brand-300 hover:bg-brand-700 hover:text-white border border-brand-700/50 justify-center"
+        >
+          Close Menu
+        </button>
       </div>
     </aside>
+    </>
   );
 }
