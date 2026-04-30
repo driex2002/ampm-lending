@@ -30,7 +30,7 @@ export default auth(function middleware(req) {
   // ---------------------------------------------------------------
   // Public routes: allow through
   // ---------------------------------------------------------------
-  const publicPaths = ["/login", "/api/auth"];
+  const publicPaths = ["/login", "/api/auth", "/api/public/"];
   if (publicPaths.some((p) => path.startsWith(p))) {
     // If already logged in and hits /login, redirect to dashboard
     if (isLoggedIn && path === "/login") {
