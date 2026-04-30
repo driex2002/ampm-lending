@@ -26,16 +26,21 @@ export function DynamicFavicon() {
       document.title = document.title.replace(/^.*?\|/, `${appName} |`).replace(/AMPM Lending(\s*–[^|]+)?$/, appName);
     }
 
-    // Update favicon
-    let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
+    // Remove ALL existing favicon-related link elements, then add a fresh one.
+    // Mutating an existing element's href is not reliably picked up by all browsers.
+    document
+      .querySelectorAll("link[rel~='icon'], link[rel='shortcut icon']")
+      .forEach((el) => el.parentNode?.removeChild(el));
+
+    const link = document.createElement("link");
+    link.rel = "icon";
 
     if (favicon) {
-      link.type = favicon.startsWith("data:image/png") ? "image/png" : "image/x-icon";
+      link.type = favicon.startsWith("data:image/png")
+        ? "image/png"
+        : favicon.startsWith("data:image/svg")
+        ? "image/svg+xml"
+        : "image/x-icon";
       link.href = favicon;
     } else {
       // Default: emoji favicon via SVG
@@ -43,6 +48,8 @@ export function DynamicFavicon() {
       link.href =
         "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>";
     }
+
+    document.head.appendChild(link);
   }, [data]);
 
   return null;
