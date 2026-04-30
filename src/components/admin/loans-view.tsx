@@ -90,63 +90,134 @@ export function LoansView() {
         ) : loans.length === 0 ? (
           <div className="text-center py-16 text-gray-400"><CreditCard size={40} className="mx-auto mb-3 opacity-30" /><p>No loans found</p></div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {["Loan #", "Borrower", "Principal", "Outstanding", "Term", "Next Due", "Status", "Actions"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {loans.map((loan) => (
-                  <tr key={loan.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 font-mono text-xs font-medium text-brand-700">{loan.loanNumber}</td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-800">{getFullName(loan.borrower.firstName, loan.borrower.middleName, loan.borrower.lastName)}</p>
+          <>
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100">
+              {loans.map((loan) => (
+                <div key={loan.id} className="px-4 py-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-xs font-semibold text-brand-700">{loan.loanNumber}</p>
+                      <p className="font-medium text-gray-800 text-sm mt-0.5">
+                        {getFullName(loan.borrower.firstName, loan.borrower.middleName, loan.borrower.lastName)}
+                      </p>
                       <p className="text-xs text-gray-400">{loan.borrower.email}</p>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{formatCurrency(loan.principalAmount)}</td>
-                    <td className="px-4 py-3">
-                      <span className={loan.outstandingBalance > 0 ? "font-semibold text-gray-800" : "text-green-600 font-semibold"}>
+                    </div>
+                    <div className="shrink-0">{statusBadge(loan)}</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div>
+                      <span className="text-gray-400">Principal</span>
+                      <p className="text-gray-700 font-medium">{formatCurrency(loan.principalAmount)}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Outstanding</span>
+                      <p className={loan.outstandingBalance > 0 ? "font-semibold text-gray-800" : "font-semibold text-green-600"}>
                         {formatCurrency(loan.outstandingBalance)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      {loan.paymentFrequency
-                        ? `${FREQ_LABELS[loan.paymentFrequency] ?? loan.paymentFrequency} × ${loan.totalPeriods}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Term</span>
+                      <p className="text-gray-600">
+                        {loan.paymentFrequency
+                          ? `${FREQ_LABELS[loan.paymentFrequency] ?? loan.paymentFrequency} × ${loan.totalPeriods}`
+                          : "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Next Due</span>
                       {loan.nextDueDate ? (
-                        <div>
-                          <p className="text-gray-700">{formatDate(loan.nextDueDate)}</p>
-                          <p className="text-gray-400">{formatCurrency(loan.nextDueAmount)}</p>
-                        </div>
-                      ) : "—"}
-                    </td>
-                    <td className="px-4 py-3">{statusBadge(loan)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Link href={`/admin/loans/${loan.id}`} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded text-xs font-medium transition">
-                          <Eye size={12} /> View
-                        </Link>
-                        <button onClick={() => setEditLoan(loan)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition">
-                          Edit
-                        </button>
-                        {loan.status === "ACTIVE" && (
-                          <button onClick={() => setPaymentLoan(loan)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded text-xs font-medium transition">
-                            Pay
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                        <p className="text-gray-700">{formatDate(loan.nextDueDate)} <span className="text-gray-400">({formatCurrency(loan.nextDueAmount)})</span></p>
+                      ) : <p className="text-gray-400">—</p>}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <Link
+                      href={`/admin/loans/${loan.id}`}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium transition"
+                    >
+                      <Eye size={13} /> View
+                    </Link>
+                    <button
+                      onClick={() => setEditLoan(loan)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium transition"
+                    >
+                      Edit
+                    </button>
+                    {loan.status === "ACTIVE" && (
+                      <button
+                        onClick={() => setPaymentLoan(loan)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-lg text-xs font-medium transition"
+                      >
+                        Pay
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    {["Loan #", "Borrower", "Principal", "Outstanding", "Term", "Next Due", "Status", "Actions"].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {loans.map((loan) => (
+                    <tr key={loan.id} className="hover:bg-gray-50 transition">
+                      <td className="px-4 py-3 font-mono text-xs font-medium text-brand-700">{loan.loanNumber}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-800">{getFullName(loan.borrower.firstName, loan.borrower.middleName, loan.borrower.lastName)}</p>
+                        <p className="text-xs text-gray-400">{loan.borrower.email}</p>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{formatCurrency(loan.principalAmount)}</td>
+                      <td className="px-4 py-3">
+                        <span className={loan.outstandingBalance > 0 ? "font-semibold text-gray-800" : "text-green-600 font-semibold"}>
+                          {formatCurrency(loan.outstandingBalance)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500">
+                        {loan.paymentFrequency
+                          ? `${FREQ_LABELS[loan.paymentFrequency] ?? loan.paymentFrequency} × ${loan.totalPeriods}`
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {loan.nextDueDate ? (
+                          <div>
+                            <p className="text-gray-700">{formatDate(loan.nextDueDate)}</p>
+                            <p className="text-gray-400">{formatCurrency(loan.nextDueAmount)}</p>
+                          </div>
+                        ) : "—"}
+                      </td>
+                      <td className="px-4 py-3">{statusBadge(loan)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <Link href={`/admin/loans/${loan.id}`} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded text-xs font-medium transition">
+                            <Eye size={12} /> View
+                          </Link>
+                          <button onClick={() => setEditLoan(loan)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition">
+                            Edit
+                          </button>
+                          {loan.status === "ACTIVE" && (
+                            <button onClick={() => setPaymentLoan(loan)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded text-xs font-medium transition">
+                              Pay
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
         {pagination && pagination.totalPages > 1 && (
           <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
