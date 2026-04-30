@@ -38,7 +38,13 @@ export async function GET(
 
   if (!payment) return notFound("Payment not found");
 
-  return ok(payment);
+  return ok({
+    ...payment,
+    amount: Number(payment.amount),
+    principalPaid: Number(payment.principalPaid),
+    interestPaid: Number(payment.interestPaid),
+    penaltyPaid: Number(payment.penaltyPaid),
+  });
 }
 
 // ---------------------------------------------------------------

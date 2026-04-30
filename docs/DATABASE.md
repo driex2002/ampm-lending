@@ -173,10 +173,12 @@ npx prisma migrate status
 
 The seed file (`prisma/seed.ts`) creates:
 
-1. **Admin user** — `admin@ampmlending.com` / `Admin@AMPM2024!`
-2. **Demo borrower** — `juan.delacruz@example.com` / `Borrower@AMPM2024!`
+1. **Admin user** — `admin@ampmlending.com` / ••••••••••••••••
+2. **Demo borrower** — `juan.delacruz@example.com` / ••••••••••••••••
 3. **Loan terms** — Weekly (12 weeks), Monthly (12 months), Monthly (24 months), Monthly (36 months)
 4. **System settings** — Full set of defaults including branding (app name, login BG, dashboard BG) and business/security parameters
+
+> For default credentials, contact the project owner at **driex2002@gmail.com**
 
 > The seed uses `upsert` with `update: {}` for system settings — re-seeding will **not** overwrite values you have already customized through the Settings UI.
 
@@ -328,16 +330,16 @@ npx prisma migrate status
 
 The seed file (`prisma/seed.ts`) creates:
 
-1. **Admin user** — `admin@ampmlending.com` / `Admin@AMPM2024!`
-2. **Demo borrower** — `juan.delacruz@example.com` / `Borrower@AMPM2024!`
+1. **Admin user** — `admin@ampmlending.com` / ••••••••••••••••
+2. **Demo borrower** — `juan.delacruz@example.com` / ••••••••••••••••
 3. **Loan terms** — Weekly (12 weeks), Monthly (12 months), Monthly (24 months), Monthly (36 months)
 4. **System settings** — Default app-wide configuration
+
+> For default credentials, contact the project owner at **driex2002@gmail.com**
 
 ```bash
 npx prisma db seed
 ```
-
----
 
 ## Backups
 

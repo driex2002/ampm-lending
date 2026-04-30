@@ -80,7 +80,16 @@ export async function GET(req: NextRequest) {
     db.payment.count({ where }),
   ]);
 
-  return ok({ data: payments, pagination: buildPaginationMeta(total, page, limit) });
+  const convertedPayments = payments.map(p => ({
+    ...p,
+    amount: Number(p.amount),
+    principalPaid: Number(p.principalPaid),
+    interestPaid: Number(p.interestPaid),
+    penaltyPaid: Number(p.penaltyPaid),
+    waivedInterest: Number(p.waivedInterest),
+  }));
+
+  return ok({ data: convertedPayments, pagination: buildPaginationMeta(total, page, limit) });
 }
 
 // ---------------------------------------------------------------

@@ -140,12 +140,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Default Credentials
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@ampmlending.com` | `Admin@AMPM2024!` |
-| Borrower (demo) | `juan.delacruz@example.com` | `Borrower@AMPM2024!` |
+Default credentials are generated during seed and masked for security reasons.
 
-> **⚠️ Change all default passwords immediately after first login in production.**
+> **Note:** If you need the default credentials for local development, please contact the project owner at **driex2002@gmail.com**
 
 ---
 
@@ -317,12 +314,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Default Credentials
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@ampmlending.com` | `Admin@AMPM2024!` |
-| Borrower (demo) | `juan.delacruz@example.com` | `Borrower@AMPM2024!` |
+Default credentials are generated during seed and masked for security reasons.
 
-> **⚠️ Change all default passwords immediately after first login in production.**
+> **Note:** If you need the default credentials for local development, please contact the project owner at **driex2002@gmail.com**
 
 ---
 
