@@ -91,7 +91,7 @@ export function BorrowersView() {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Table / Cards */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
@@ -103,54 +103,103 @@ export function BorrowersView() {
             <p>No borrowers found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {["Name", "Email", "Phone", "Active Loans", "Status", "Created", "Actions"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {borrowers.map((b) => (
-                  <tr key={b.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 font-medium text-gray-800">{b.fullName}</td>
-                    <td className="px-4 py-3 text-gray-600">{b.email}</td>
-                    <td className="px-4 py-3 text-gray-600">{b.cellphone}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${b.activeLoansCount > 0 ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"}`}>
-                        {b.activeLoansCount} loan{b.activeLoansCount !== 1 ? "s" : ""}
+          <>
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100">
+              {borrowers.map((b) => (
+                <div key={b.id} className="px-4 py-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-gray-800 text-sm">{b.fullName}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{b.email}</p>
+                    </div>
+                    {b.isBlacklisted ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 shrink-0">
+                        <XCircle size={10} /> Blacklisted
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {b.isBlacklisted ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                          <XCircle size={10} /> Blacklisted
-                        </span>
-                      ) : b.isActive ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                          <CheckCircle size={10} /> Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(b.createdAt)}</td>
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/borrowers/${b.id}`} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded text-xs font-medium transition">
-                        <Eye size={12} /> View
-                      </Link>
-                    </td>
+                    ) : b.isActive ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 shrink-0">
+                        <CheckCircle size={10} /> Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 shrink-0">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>{b.cellphone || "—"}</span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded font-medium ${
+                        b.activeLoansCount > 0 ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {b.activeLoansCount} loan{b.activeLoansCount !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-gray-400">Since {formatDate(b.createdAt)}</span>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Link
+                      href={`/admin/borrowers/${b.id}`}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium transition"
+                    >
+                      <Eye size={13} /> View / Manage
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    {["Name", "Email", "Phone", "Active Loans", "Status", "Created", "Actions"].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {borrowers.map((b) => (
+                    <tr key={b.id} className="hover:bg-gray-50 transition">
+                      <td className="px-4 py-3 font-medium text-gray-800">{b.fullName}</td>
+                      <td className="px-4 py-3 text-gray-600">{b.email}</td>
+                      <td className="px-4 py-3 text-gray-600">{b.cellphone}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${b.activeLoansCount > 0 ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"}`}>
+                          {b.activeLoansCount} loan{b.activeLoansCount !== 1 ? "s" : ""}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {b.isBlacklisted ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                            <XCircle size={10} /> Blacklisted
+                          </span>
+                        ) : b.isActive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                            <CheckCircle size={10} /> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(b.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/admin/borrowers/${b.id}`} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded text-xs font-medium transition">
+                          <Eye size={12} /> View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
