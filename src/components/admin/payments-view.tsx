@@ -11,7 +11,7 @@ import type { PaymentSnapshot } from "@/components/admin/edit-payment-modal";
 interface Payment {
   id: string; referenceNumber: string; amount: number; paymentDate: string;
   paymentType: string; principalPaid: number; interestPaid: number;
-  penaltyPaid: number; penaltyWaived: number; notes: string | null;
+  penaltyPaid: number; waivedInterest: number; remarks: string | null;
   loan: { id: string; loanNumber: string; borrower: { id: string; firstName: string; middleName: string | null; lastName: string; email: string } };
 }
 
@@ -80,7 +80,7 @@ export function PaymentsView() {
                     <td className="px-4 py-3 text-gray-600">{formatCurrency(p.principalPaid)}</td>
                     <td className="px-4 py-3 text-gray-600">{formatCurrency(p.interestPaid)}</td>
                     <td className="px-4 py-3 text-red-600">{p.penaltyPaid > 0 ? formatCurrency(p.penaltyPaid) : "—"}</td>
-                    <td className="px-4 py-3 text-amber-600">{p.penaltyWaived > 0 ? formatCurrency(p.penaltyWaived) : "—"}</td>
+                    <td className="px-4 py-3 text-amber-600">{p.waivedInterest > 0 ? formatCurrency(p.waivedInterest) : "—"}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{p.paymentType}</td>
                     <td className="px-4 py-3">
                       <button
@@ -93,7 +93,7 @@ export function PaymentsView() {
                           principalPaid: p.principalPaid,
                           interestPaid: p.interestPaid,
                           penaltyPaid: p.penaltyPaid,
-                          remarks: p.notes,
+                          remarks: p.remarks,
                         })}
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition"
                       >

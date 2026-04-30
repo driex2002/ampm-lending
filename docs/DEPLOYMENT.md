@@ -125,7 +125,6 @@ Both Railway and Render support Docker-based deployments. Simply:
 
 ## Post-Deployment Checklist
 
-- [ ] Change default admin password (`Admin@AMPM2024!`)
 - [ ] Set strong `NEXTAUTH_SECRET` (32+ random chars)
 - [ ] Set `SUPER_ADMIN_EMAIL` to the permanent super-admin email address
 - [ ] Configure Gmail App Password for email notifications
@@ -138,6 +137,8 @@ Both Railway and Render support Docker-based deployments. Simply:
 - [ ] Test loan creation → payment recording → email receipt flow
 - [ ] Verify audit logs are recording correctly
 - [ ] Set up database backups (pg_dump cron or Neon auto-backup)
+
+> **Note:** For default credentials, contact the project owner at **driex2002@gmail.com**
 
 ---
 

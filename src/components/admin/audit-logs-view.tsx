@@ -31,12 +31,14 @@ export function AuditLogsView() {
   const pagination = data?.data?.pagination;
 
   const actionColors: Record<string, string> = {
-    BORROWER_CREATED: "bg-green-100 text-green-700",
-    LOAN_CREATED: "bg-blue-100 text-blue-700",
-    PAYMENT_RECORDED: "bg-emerald-100 text-emerald-700",
-    INTEREST_WAIVED: "bg-amber-100 text-amber-700",
-    BORROWER_BLACKLISTED: "bg-red-100 text-red-700",
+    CREATE: "bg-green-100 text-green-700",
+    UPDATE: "bg-blue-100 text-blue-700",
+    RECORD_PAYMENT: "bg-emerald-100 text-emerald-700",
+    WAIVE_INTEREST: "bg-amber-100 text-amber-700",
+    BLACKLIST: "bg-red-100 text-red-700",
+    UNBLACKLIST: "bg-orange-100 text-orange-700",
     PASSWORD_CHANGED: "bg-purple-100 text-purple-700",
+    EMAIL_CHANGED: "bg-cyan-100 text-cyan-700",
     LOGIN: "bg-gray-100 text-gray-600",
     DEFAULT: "bg-gray-100 text-gray-600",
   };
@@ -57,11 +59,13 @@ export function AuditLogsView() {
         </div>
         <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }} className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
           <option value="">All Actions</option>
-          <option value="BORROWER_CREATED">Borrower Created</option>
-          <option value="LOAN_CREATED">Loan Created</option>
-          <option value="PAYMENT_RECORDED">Payment Recorded</option>
-          <option value="INTEREST_WAIVED">Interest Waived</option>
-          <option value="BORROWER_BLACKLISTED">Borrower Blacklisted</option>
+          <option value="CREATE">Create</option>
+          <option value="UPDATE">Update</option>
+          <option value="RECORD_PAYMENT">Record Payment</option>
+          <option value="WAIVE_INTEREST">Waive Interest</option>
+          <option value="EMAIL_CHANGED">Email Changed</option>
+          <option value="BLACKLIST">Blacklist</option>
+          <option value="UNBLACKLIST">Unblacklist</option>
           <option value="PASSWORD_CHANGED">Password Changed</option>
           <option value="LOGIN">Login</option>
         </select>

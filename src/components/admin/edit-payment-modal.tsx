@@ -42,20 +42,20 @@ export function EditPaymentModal({ payment, onClose, onSuccess }: Props) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(updatePaymentSchema),
     defaultValues: {
-      amount: payment.amount,
+      amount: Number(payment.amount),
       paymentDate: payment.paymentDate.split("T")[0],
       paymentType: payment.paymentType as FormData["paymentType"],
-      principalPaid: payment.principalPaid,
-      interestPaid: payment.interestPaid,
-      penaltyPaid: payment.penaltyPaid,
+      principalPaid: Number(payment.principalPaid),
+      interestPaid: Number(payment.interestPaid),
+      penaltyPaid: Number(payment.penaltyPaid),
       remarks: payment.remarks ?? "",
     },
   });
 
-  const watchedAmount = watch("amount") ?? 0;
-  const watchedPrincipal = watch("principalPaid") ?? 0;
-  const watchedInterest = watch("interestPaid") ?? 0;
-  const watchedPenalty = watch("penaltyPaid") ?? 0;
+  const watchedAmount = Number(watch("amount") ?? 0);
+  const watchedPrincipal = Number(watch("principalPaid") ?? 0);
+  const watchedInterest = Number(watch("interestPaid") ?? 0);
+  const watchedPenalty = Number(watch("penaltyPaid") ?? 0);
   const breakdownTotal = watchedPrincipal + watchedInterest + watchedPenalty;
 
   const onSubmit = (data: FormData) => {

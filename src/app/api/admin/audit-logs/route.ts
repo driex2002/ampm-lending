@@ -13,19 +13,28 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") ?? "1", 10);
   const limit = parseInt(searchParams.get("limit") ?? "30", 10);
-  const entityType = searchParams.get("entityType");
+  const search = searchParams.get("search");
   const action = searchParams.get("action");
+  const entityType = searchParams.get("entityType");
   const performedBy = searchParams.get("performedBy");
   const targetUserId = searchParams.get("targetUserId");
 
   const { skip, take } = getPaginationOffset(page, limit);
 
-  const where = {
-    ...(entityType && { entityType }),
+  const where: any = {
     ...(action && { action }),
+    ...(entityType && { entityType }),
     ...(performedBy && { performedBy }),
     ...(targetUserId && { targetUserId }),
   };
+
+  if (search) {
+    where.OR = [
+      { description: { contains: search, mode: "insensitive" as const } },
+      { entityType: { contains: search, mode: "insensitive" as const } },
+      { action: { contains: search, mode: "insensitive" as const } },
+    ];
+  }
 
   const [logs, total] = await Promise.all([
     db.auditLog.findMany({
