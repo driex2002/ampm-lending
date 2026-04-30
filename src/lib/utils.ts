@@ -71,8 +71,12 @@ export function generateTempPassword(): string {
   const special = "@#$!";
   const all = upper + lower + digits + special;
 
-  const randomFrom = (str: string) =>
-    str[Math.floor(Math.random() * str.length)];
+  // Use CSPRNG instead of Math.random()
+  const randomFrom = (str: string) => {
+    const rand = new Uint32Array(1);
+    crypto.getRandomValues(rand);
+    return str[rand[0] % str.length];
+  };
 
   // Guarantee at least one of each required type
   const chars = [
@@ -86,11 +90,15 @@ export function generateTempPassword(): string {
     ...Array.from({ length: 3 }, () => randomFrom(all)),
   ];
 
-  // Shuffle
-  return chars
-    .sort(() => Math.random() - 0.5)
-    .join("")
-    .slice(0, 10);
+  // Cryptographically secure Fisher-Yates shuffle
+  for (let i = chars.length - 1; i > 0; i--) {
+    const rand = new Uint32Array(1);
+    crypto.getRandomValues(rand);
+    const j = rand[0] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join("").slice(0, 10);
 }
 
 // ----------------------------------------------------------------
@@ -114,15 +122,18 @@ export function isDueSoon(
 // ----------------------------------------------------------------
 // Pagination helpers
 // ----------------------------------------------------------------
+export const MAX_PAGE_LIMIT = 100;
+
 export interface PaginationParams {
   page?: number;
   limit?: number;
 }
 
 export function getPaginationOffset(page = 1, limit = 10) {
-  const skip = (Math.max(1, page) - 1) * limit;
-  const take = limit;
-  return { skip, take };
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.min(Math.max(1, limit), MAX_PAGE_LIMIT);
+  const skip = (safePage - 1) * safeLimit;
+  return { skip, take: safeLimit };
 }
 
 export function buildPaginationMeta(

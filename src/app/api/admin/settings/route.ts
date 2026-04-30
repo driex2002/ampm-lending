@@ -7,13 +7,16 @@ import { z } from "zod";
 import { requireAdmin, ok, badRequest, serverError, validateBody } from "@/app/api/_helpers";
 
 const updateSettingSchema = z.object({
-  key: z.string().min(1),
-  value: z.string(),
+  key: z.string().min(1).max(100),
+  value: z.string().max(10_000),
 });
 
-// Batch update schema
+// Batch update schema — max 50 settings per request to prevent memory exhaustion
 const batchUpdateSchema = z.object({
-  settings: z.array(z.object({ key: z.string().min(1), value: z.string() })).min(1),
+  settings: z
+    .array(z.object({ key: z.string().min(1).max(100), value: z.string().max(10_000) }))
+    .min(1)
+    .max(50),
 });
 
 export async function GET(_req: NextRequest) {

@@ -4,15 +4,21 @@
  */
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { z } from "zod";
 import { startOfMonth, endOfMonth, subMonths, format, differenceInDays } from "date-fns";
 import { requireAdmin, ok, badRequest, serverError } from "@/app/api/_helpers";
+
+const reportTypeSchema = z.enum(["collections", "portfolio", "overdue"]);
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin();
   if ("status" in guard) return guard;
 
   const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type") ?? "collections";
+  const rawType = searchParams.get("type") ?? "collections";
+  const parsed = reportTypeSchema.safeParse(rawType);
+  if (!parsed.success) return badRequest("Invalid report type");
+  const type = parsed.data;
 
   try {
     if (type === "collections") {
