@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 /**
  * Injects a dynamic favicon from the branding settings.
  * Falls back to the default emoji favicon if none is configured.
  */
 export function DynamicFavicon() {
+  const qc = useQueryClient();
+
   const { data } = useQuery<{ data: { appName: string; appIcon: string; appFavicon: string } }>({
     queryKey: ["app-config"],
     queryFn: () => fetch("/api/public/app-config").then(r => r.json()),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always fetch fresh to reflect changes immediately
+    refetchInterval: 30000, // Refetch every 30 seconds to catch updates
   });
 
   useEffect(() => {
