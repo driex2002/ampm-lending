@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminHeader } from "@/components/admin/header";
+import { MobileMenuProvider } from "@/components/admin/mobile-menu-context";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -29,20 +30,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const dashboardBgOpacity = parseFloat(opacitySetting?.value || "0.08");
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-gray-50">
-      {/* Dashboard background image overlay */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0"
-        style={{ backgroundImage: `url('${dashboardBg}')`, opacity: dashboardBgOpacity }}
-        aria-hidden="true"
-      />
-      <AdminSidebar />
-      <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
-        <AdminHeader />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </main>
+    <MobileMenuProvider>
+      <div className="relative flex h-screen overflow-hidden bg-gray-50">
+        {/* Dashboard background image overlay */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0"
+          style={{ backgroundImage: `url('${dashboardBg}')`, opacity: dashboardBgOpacity }}
+          aria-hidden="true"
+        />
+        <AdminSidebar />
+        <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
+          <AdminHeader />
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </MobileMenuProvider>
   );
 }

@@ -132,7 +132,40 @@ export function LoanDetailView({ id }: { id: string }) {
         <div className="px-5 py-4 border-b border-gray-100">
           <h3 className="font-semibold text-gray-700">Payment Schedule ({loan.paymentSchedules.length} installments)</h3>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Mobile cards */}
+        <div className="sm:hidden divide-y divide-gray-100">
+          {loan.paymentSchedules.map((s) => {
+            const balance = Math.max(0, s.totalDue - s.paidAmount - s.waivedAmount);
+            return (
+              <div key={s.id} className={`px-4 py-3 space-y-1.5 ${s.status === "OVERDUE" ? "bg-red-50" : ""}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500">#{s.periodNumber} &mdash; {formatDate(s.dueDate)}</span>
+                  {s.status === "PAID" ? <span className="text-xs text-green-600 font-semibold">Paid</span>
+                    : s.status === "OVERDUE" ? <span className="text-xs text-red-600 font-semibold">Overdue</span>
+                    : s.status === "PARTIAL" ? <span className="text-xs text-yellow-600 font-semibold">Partial</span>
+                    : <span className="text-xs text-gray-400">Pending</span>}
+                </div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                  <div><p className="text-gray-400">Principal</p><p className="text-gray-700">{formatCurrency(s.principalDue)}</p></div>
+                  <div><p className="text-gray-400">Interest</p><p className="text-gray-700">{formatCurrency(s.interestDue)}</p></div>
+                  <div><p className="text-gray-400">Penalty</p><p className={s.penaltyDue > 0 ? "text-red-600" : "text-gray-400"}>{s.penaltyDue > 0 ? formatCurrency(s.penaltyDue) : "—"}</p></div>
+                  <div><p className="text-gray-400">Total Due</p><p className="font-medium text-gray-800">{formatCurrency(s.totalDue)}</p></div>
+                  <div><p className="text-gray-400">Paid</p><p className={s.paidAmount > 0 ? "text-green-600" : "text-gray-400"}>{s.paidAmount > 0 ? formatCurrency(s.paidAmount) : "—"}</p></div>
+                  <div><p className="text-gray-400">Balance</p><p className="font-semibold text-gray-800">{formatCurrency(balance)}</p></div>
+                </div>
+                {s.status !== "PAID" && loan.status === "ACTIVE" && (
+                  <button onClick={() => waiveInterest("PER_PAYMENT", s.id)} disabled={isPending} className="mt-1 w-full px-2 py-1.5 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 rounded-lg transition">
+                    Waive Interest
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
@@ -180,50 +213,71 @@ export function LoanDetailView({ id }: { id: string }) {
         {loan.payments.length === 0 ? (
           <p className="text-center py-10 text-gray-400 text-sm">No payments recorded yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  {["Ref #", "Date", "Amount", "Principal", "Interest", "Penalty", "Waived", "Type", "Notes", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {loan.payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-brand-700">{p.referenceNumber}</td>
-                    <td className="px-4 py-3 text-xs whitespace-nowrap">{formatDate(p.paymentDate)}</td>
-                    <td className="px-4 py-3 font-semibold text-green-600">{formatCurrency(p.amount)}</td>
-                    <td className="px-4 py-3">{formatCurrency(p.principalPaid)}</td>
-                    <td className="px-4 py-3">{formatCurrency(p.interestPaid)}</td>
-                    <td className="px-4 py-3 text-red-600">{p.penaltyPaid > 0 ? formatCurrency(p.penaltyPaid) : "—"}</td>
-                    <td className="px-4 py-3 text-amber-600">{p.waivedInterest > 0 ? formatCurrency(p.waivedInterest) : "—"}</td>
-                    <td className="px-4 py-3 text-xs">{p.paymentType}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{p.remarks ?? "—"}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => setEditPayment({
-                          id: p.id,
-                          referenceNumber: p.referenceNumber,
-                          amount: p.amount,
-                          paymentDate: p.paymentDate,
-                          paymentType: p.paymentType,
-                          principalPaid: p.principalPaid,
-                          interestPaid: p.interestPaid,
-                          penaltyPaid: p.penaltyPaid,
-                          remarks: p.remarks,
-                        })}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition"
-                      >
-                        Edit
-                      </button>
-                    </td>
+          <>
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100">
+              {loan.payments.map((p) => (
+                <div key={p.id} className="px-4 py-3 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-xs font-semibold text-brand-700">{p.referenceNumber}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(p.paymentDate)} &middot; {p.paymentType}</p>
+                    </div>
+                    <p className="text-base font-bold text-green-600 shrink-0">{formatCurrency(p.amount)}</p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-x-3 gap-y-1 text-xs">
+                    <div><p className="text-gray-400">Principal</p><p className="text-gray-700">{formatCurrency(p.principalPaid)}</p></div>
+                    <div><p className="text-gray-400">Interest</p><p className="text-gray-700">{formatCurrency(p.interestPaid)}</p></div>
+                    <div><p className="text-gray-400">Penalty</p><p className={p.penaltyPaid > 0 ? "text-red-600" : "text-gray-400"}>{p.penaltyPaid > 0 ? formatCurrency(p.penaltyPaid) : "—"}</p></div>
+                    <div><p className="text-gray-400">Waived</p><p className={p.waivedInterest > 0 ? "text-amber-600" : "text-gray-400"}>{p.waivedInterest > 0 ? formatCurrency(p.waivedInterest) : "—"}</p></div>
+                  </div>
+                  {p.remarks && <p className="text-xs text-gray-400 italic">{p.remarks}</p>}
+                  <button
+                    onClick={() => setEditPayment({ id: p.id, referenceNumber: p.referenceNumber, amount: p.amount, paymentDate: p.paymentDate, paymentType: p.paymentType, principalPaid: p.principalPaid, interestPaid: p.interestPaid, penaltyPaid: p.penaltyPaid, remarks: p.remarks })}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium transition"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {["Ref #", "Date", "Amount", "Principal", "Interest", "Penalty", "Waived", "Type", "Notes", "Actions"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {loan.payments.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-mono text-xs text-brand-700">{p.referenceNumber}</td>
+                      <td className="px-4 py-3 text-xs whitespace-nowrap">{formatDate(p.paymentDate)}</td>
+                      <td className="px-4 py-3 font-semibold text-green-600">{formatCurrency(p.amount)}</td>
+                      <td className="px-4 py-3">{formatCurrency(p.principalPaid)}</td>
+                      <td className="px-4 py-3">{formatCurrency(p.interestPaid)}</td>
+                      <td className="px-4 py-3 text-red-600">{p.penaltyPaid > 0 ? formatCurrency(p.penaltyPaid) : "—"}</td>
+                      <td className="px-4 py-3 text-amber-600">{p.waivedInterest > 0 ? formatCurrency(p.waivedInterest) : "—"}</td>
+                      <td className="px-4 py-3 text-xs">{p.paymentType}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{p.remarks ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => setEditPayment({ id: p.id, referenceNumber: p.referenceNumber, amount: p.amount, paymentDate: p.paymentDate, paymentType: p.paymentType, principalPaid: p.principalPaid, interestPaid: p.interestPaid, penaltyPaid: p.penaltyPaid, remarks: p.remarks })}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-xs font-medium transition"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

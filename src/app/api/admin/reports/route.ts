@@ -4,22 +4,31 @@
  */
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { z } from "zod";
 import { startOfMonth, endOfMonth, subMonths, format, differenceInDays } from "date-fns";
 import { requireAdmin, ok, badRequest, serverError } from "@/app/api/_helpers";
+
+const reportTypeSchema = z.enum(["collections", "portfolio", "overdue"]);
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin();
   if ("status" in guard) return guard;
 
   const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type") ?? "collections";
+  const rawType = searchParams.get("type") ?? "collections";
+  const parsed = reportTypeSchema.safeParse(rawType);
+  if (!parsed.success) return badRequest("Invalid report type");
+  const type = parsed.data;
 
   try {
     if (type === "collections") {
       const now = new Date();
       const months = Array.from({ length: 12 }, (_, i) => {
         const date = subMonths(now, 11 - i);
-        return { start: startOfMonth(date), end: endOfMonth(date), label: format(date, "MMM yyyy") };
+        const start = startOfMonth(date);
+        const end = new Date(endOfMonth(date));
+        end.setHours(23, 59, 59, 999);
+        return { start, end, label: format(date, "MMM yyyy") };
       });
 
       const monthly = await Promise.all(
@@ -39,10 +48,13 @@ export async function GET(req: NextRequest) {
       );
 
       const thisMonthStart = startOfMonth(now);
+      const thisMonthEnd = new Date(endOfMonth(now));
+      thisMonthEnd.setHours(23, 59, 59, 999);
+
       const allTimeAgg = await db.payment.aggregate({ _sum: { amount: true }, _count: { id: true } });
       const thisMonthAgg = await db.payment.aggregate({
         _sum: { amount: true },
-        where: { paymentDate: { gte: thisMonthStart } },
+        where: { paymentDate: { gte: thisMonthStart, lte: thisMonthEnd } },
       });
 
       const totalCollected = Number(allTimeAgg._sum.amount ?? 0);

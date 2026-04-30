@@ -72,7 +72,11 @@ export function ReportsView() {
                     <BarChart data={reportData.monthly} margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `₱${(v / 1000).toFixed(0)}k`} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={v => {
+                          if (v >= 1_000_000) return `₱${(v / 1_000_000).toFixed(1)}M`;
+                          if (v >= 1_000) return `₱${(v / 1_000).toFixed(0)}k`;
+                          return `₱${v}`;
+                        }} />
                       <Tooltip formatter={(v: number) => formatCurrency(v)} />
                       <Bar dataKey="collected" fill="#1d4ed8" radius={[4, 4, 0, 0]} name="Collected" />
                     </BarChart>
