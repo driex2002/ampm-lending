@@ -46,6 +46,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN npm run build
 
+# Pre-compile seed.ts → seed.js so the runner can execute it with plain `node`.
+# bcryptjs (pure JS) is bundled inline; @prisma/client stays external.
+# This removes the tsx runtime dependency from the runner image entirely.
+RUN node ./node_modules/.bin/esbuild prisma/seed.ts \
+    --bundle --platform=node --target=node20 \
+    --outfile=prisma/seed.js \
+    --external:@prisma/client
+
 # ── Stage 3: runner ───────────────────────────────────────────────────────────
 # Minimal production image. Only the compiled Next.js app, Prisma runtime
 # files, and the pinned Prisma CLI are included — no source code or dev deps.
@@ -85,14 +93,6 @@ COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 # NOTE: We no longer call .bin/prisma directly (see docker-entrypoint.sh),
 # but we keep this copy in case the wrapper is ever invoked indirectly.
 COPY --from=builder /app/node_modules/prisma/build/prisma_schema_build_bg.wasm ./node_modules/.bin/prisma_schema_build_bg.wasm
-
-# Copy tsx so the seed script can run inside the container.
-# tsx is a devDependency and is NOT included in the Next.js standalone output.
-# The seed command (prisma db seed) reads package.json and executes:
-#   tsx prisma/seed.ts
-# Without tsx in node_modules/.bin/ this command fails with "command not found".
-COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
-COPY --from=builder /app/node_modules/.bin/tsx ./node_modules/.bin/tsx
 
 # ── Startup script ────────────────────────────────────────────────────────────
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh

@@ -1,19 +1,58 @@
 /**
  * AMPM Lending — Database Seed
- * Seeds default system configuration (loan terms, interest configs, settings).
- * No default user accounts are created — the super admin logs in via Google OAuth.
+ * Seeds the super admin account (random one-time password) + default system config.
  * Run with: npm run db:seed
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 
 const prisma = new PrismaClient();
+
+const SUPER_ADMIN_EMAIL = (
+  process.env.SUPER_ADMIN_EMAIL ?? "driex2002@gmail.com"
+).toLowerCase();
 
 async function main() {
   console.log("🌱 Seeding AMPM Lending database...\n");
 
   // -----------------------------------------------------------
-  // 1. DEFAULT LOAN TERMS
+  // 1. SUPER ADMIN ACCOUNT
+  // Created only if it doesn't exist yet. A random one-time
+  // password is generated each fresh setup — no hardcoded default.
+  // -----------------------------------------------------------
+  const existing = await prisma.user.findUnique({ where: { email: SUPER_ADMIN_EMAIL } });
+  if (!existing) {
+    const tempPassword = randomBytes(12).toString("base64url").slice(0, 16);
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+    await prisma.user.create({
+      data: {
+        email: SUPER_ADMIN_EMAIL,
+        password: hashedPassword,
+        role: Role.ADMIN,
+        firstName: "Super",
+        lastName: "Admin",
+        cellphone: "N/A",
+        sex: "Other",
+        birthDate: new Date("1990-01-01"),
+        barangay: "N/A",
+        townCity: "N/A",
+        province: "N/A",
+        country: "Philippines",
+        mustChangePassword: true,
+        isActive: true,
+      },
+    });
+    console.log(`✅ Super admin created: ${SUPER_ADMIN_EMAIL}`);
+    console.log(`   One-time password : ${tempPassword}`);
+    console.log(`   Change this after first login!\n`);
+  } else {
+    console.log(`ℹ️  Super admin already exists: ${SUPER_ADMIN_EMAIL}\n`);
+  }
+
+  // -----------------------------------------------------------
+  // 2. DEFAULT LOAN TERMS
   // -----------------------------------------------------------
   const loanTerms = [
     // ── Daily ───────────────────────────────────────────────
