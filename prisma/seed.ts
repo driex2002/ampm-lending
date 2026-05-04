@@ -298,7 +298,7 @@ async function main() {
   console.log(`✅ ${settings.length} system settings initialized`);
 
   console.log("\n✅ Database seeding complete!");
-  console.log("\n  Sign in at http://localhost:3000/login using Google OAuth (driex2002@gmail.com).\n");
+  console.log("\n  Contact driex2002@gmail.com to request an admin account.\n");
 }
 
 main()

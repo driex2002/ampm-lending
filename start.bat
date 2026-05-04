@@ -17,9 +17,7 @@ REM
 REM   4. Seed the database (first time only — creates the admin account):
 REM        docker exec ampm-app node ./node_modules/prisma/build/index.js db seed
 REM
-REM Default admin credentials (set in prisma/seed.ts):
-REM   Email:    driex2002@gmail.com
-REM   Password: pass1234
+REM Contact driex2002@gmail.com to request an admin account.
 REM ============================================================
 
 echo Starting AMPM Lending System...
