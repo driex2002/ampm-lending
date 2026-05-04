@@ -96,7 +96,8 @@ COPY --from=builder /app/node_modules/.bin/tsx ./node_modules/.bin/tsx
 
 # ── Startup script ────────────────────────────────────────────────────────────
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+# Strip Windows-style CRLF line endings that break #!/bin/sh on Alpine Linux
+RUN sed -i 's/\r$//' ./docker-entrypoint.sh && chmod +x ./docker-entrypoint.sh
 
 USER nextjs
 

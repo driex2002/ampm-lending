@@ -1,11 +1,11 @@
 /**
  * AMPM Lending — Database Seed
- * Creates the initial admin account and default system settings
+ * Seeds default system configuration (loan terms, interest configs, settings).
+ * No default user accounts are created — the super admin logs in via Google OAuth.
  * Run with: npm run db:seed
  */
 
-import { PrismaClient, Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -13,37 +13,7 @@ async function main() {
   console.log("🌱 Seeding AMPM Lending database...\n");
 
   // -----------------------------------------------------------
-  // 1. ADMIN ACCOUNT
-  // -----------------------------------------------------------
-  const adminEmail = process.env.ADMIN_EMAIL ?? "driex2002@gmail.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "pass1234";
-  const hashedPassword = await bcrypt.hash(adminPassword, 12);
-
-  const admin = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      email: adminEmail,
-      password: hashedPassword,
-      role: Role.ADMIN,
-      firstName: "System",
-      middleName: null,
-      lastName: "Administrator",
-      cellphone: "09000000000",
-      sex: "Other",
-      birthDate: new Date("1990-01-01"),
-      barangay: "N/A",
-      townCity: "N/A",
-      province: "N/A",
-      country: "Philippines",
-      mustChangePassword: false,
-      isActive: true,
-    },
-  });
-  console.log(`✅ Admin created: ${admin.email}`);
-
-  // -----------------------------------------------------------
-  // 2. DEFAULT LOAN TERMS
+  // 1. DEFAULT LOAN TERMS
   // -----------------------------------------------------------
   const loanTerms = [
     // ── Daily ───────────────────────────────────────────────
@@ -289,10 +259,7 @@ async function main() {
   console.log(`✅ ${settings.length} system settings initialized`);
 
   console.log("\n✅ Database seeding complete!");
-  console.log(`\n📋 Admin Login:`);
-  console.log(`   Email:    ${adminEmail}`);
-  console.log(`   Password: ${adminPassword}`);
-  console.log(`\n⚠️  IMPORTANT: Change the admin password after first login!\n`);
+  console.log("\n  Sign in at http://localhost:3000/login using Google OAuth (driex2002@gmail.com).\n");
 }
 
 main()

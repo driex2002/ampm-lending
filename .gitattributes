@@ -1,0 +1,8 @@
+# Force LF line endings for shell scripts and Dockerfiles on all platforms
+*.sh        text eol=lf
+*.sh        diff=bash
+Dockerfile* text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# Default line ending for all other text files
+*           text=auto

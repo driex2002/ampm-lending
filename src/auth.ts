@@ -181,19 +181,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     // -------------------------------------------------------
     // signIn: block Google OAuth if email not registered
+    // (auto-provision the super admin on first login)
     // -------------------------------------------------------
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const existingUser = await db.user.findUnique({
+        const email = (user.email ?? "").toLowerCase();
+        const isSuperAdmin = email === SUPER_ADMIN_EMAIL;
+
+        let existingUser = await db.user.findUnique({
           where: { email: user.email! },
         });
 
         if (!existingUser) {
-          // ACCESS DENIED — email not in system
-          return "/login?error=GoogleEmailNotRegistered";
+          if (!isSuperAdmin) {
+            // ACCESS DENIED — email not in system
+            return "/login?error=GoogleEmailNotRegistered";
+          }
+          // Auto-provision the super admin account on first Google OAuth login
+          existingUser = await db.user.create({
+            data: {
+              email: user.email!,
+              role: "ADMIN",
+              firstName: user.name?.split(" ")[0] ?? "Super",
+              lastName: user.name?.split(" ").slice(1).join(" ") || "Admin",
+              cellphone: "N/A",
+              sex: "Other",
+              birthDate: new Date("1990-01-01"),
+              barangay: "N/A",
+              townCity: "N/A",
+              province: "N/A",
+              country: "Philippines",
+              avatarUrl: user.image ?? null,
+              mustChangePassword: false,
+              isActive: true,
+            },
+          });
         }
 
-        const isSuperAdmin = existingUser.email.toLowerCase() === SUPER_ADMIN_EMAIL;
         if (!isSuperAdmin && (!existingUser.isActive || existingUser.deletedAt)) {
           return "/login?error=AccountInactive";
         }

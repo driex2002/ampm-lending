@@ -131,9 +131,8 @@ echo   Setup complete!
 echo.
 echo   Application:    http://localhost:3000
 echo.
-echo   Default admin login:
-echo     Email:    driex2002@gmail.com
-echo     Password: pass1234
+echo   Sign in using Google OAuth with driex2002@gmail.com
+echo   (First login auto-provisions the super admin account)
 echo.
 echo   Useful commands:
 echo     Start:    start.bat
