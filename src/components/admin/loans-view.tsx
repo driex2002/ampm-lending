@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Eye, RefreshCw, Loader2, CreditCard, AlertTriangle } from "lucide-react";
+import { Search, Plus, Eye, RefreshCw, Loader2, CreditCard, AlertTriangle, CalendarDays } from "lucide-react";
 import { formatCurrency, formatDate, getFullName } from "@/lib/utils";
 import { CreateLoanModal } from "@/components/admin/create-loan-modal";
 import { RecordPaymentModal } from "@/components/admin/record-payment-modal";
@@ -29,6 +29,8 @@ export function LoansView() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [overdue, setOverdue] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [paymentLoan, setPaymentLoan] = useState<Loan | null>(null);
@@ -39,10 +41,12 @@ export function LoansView() {
     ...(search && { search }),
     ...(status && { status }),
     ...(overdue && { overdue: "true" }),
+    ...(dateFrom && { dateFrom }),
+    ...(dateTo && { dateTo }),
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-loans", search, status, overdue, page],
+    queryKey: ["admin-loans", search, status, overdue, dateFrom, dateTo, page],
     queryFn: () => fetch(`/api/admin/loans?${query}`).then((r) => r.json()),
   });
 
@@ -82,6 +86,27 @@ export function LoansView() {
         <button onClick={() => { setOverdue(!overdue); setPage(1); }} className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition ${overdue ? "bg-red-100 border-red-300 text-red-700" : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
           <AlertTriangle size={14} className="inline mr-1.5" />Overdue
         </button>
+        <div className="flex items-center gap-2">
+          <CalendarDays size={15} className="text-gray-400 shrink-0" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            title="Start date from"
+          />
+          <span className="text-gray-400 text-xs">–</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            title="Start date to"
+          />
+          {(dateFrom || dateTo) && (
+            <button onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }} className="text-xs text-gray-400 hover:text-gray-600 transition">✕</button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -91,8 +116,8 @@ export function LoansView() {
           <div className="text-center py-16 text-gray-400"><CreditCard size={40} className="mx-auto mb-3 opacity-30" /><p>No loans found</p></div>
         ) : (
           <>
-            {/* Mobile cards */}
-            <div className="sm:hidden divide-y divide-gray-100">
+            {/* Mobile / tablet cards */}
+            <div className="lg:hidden divide-y divide-gray-100">
               {loans.map((loan) => (
                 <div key={loan.id} className="px-4 py-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -160,7 +185,7 @@ export function LoansView() {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>

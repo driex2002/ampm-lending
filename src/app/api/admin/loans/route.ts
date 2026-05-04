@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
   const overdue = searchParams.get("overdue");
   const search = searchParams.get("search") ?? "";
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
 
   const { skip, take } = getPaginationOffset(page, limit);
 
@@ -44,6 +46,12 @@ export async function GET(req: NextRequest) {
     ...(borrowerId && { borrowerId }),
     ...(status && { status: status as any }),
     ...(overdue === "true" && { isOverdue: true, status: "ACTIVE" as const }),
+    ...((dateFrom || dateTo) && {
+      startDate: {
+        ...(dateFrom && { gte: new Date(dateFrom) }),
+        ...(dateTo && { lte: new Date(dateTo + "T23:59:59.999Z") }),
+      },
+    }),
     ...(search && {
       OR: [
         { loanNumber: { contains: search, mode: "insensitive" as const } },

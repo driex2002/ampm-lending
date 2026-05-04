@@ -73,7 +73,7 @@ export function welcomeEmailTemplate(params: {
   const content = `
     <h2 style="color:#1e293b;margin:0 0 8px;">Welcome to AMPM Lending!</h2>
     <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 24px;">
-      Hello <strong>${params.firstName}</strong>, your borrower account has been created.
+      Hello <strong>${params.firstName}</strong>, your account has been created.
       Use the credentials below to log in for the first time.
     </p>
 
@@ -123,6 +123,8 @@ export function paymentConfirmationTemplate(params: {
   penaltyPaid: number;
   waivedInterest: number;
   remainingBalance: number;
+  loanDate?: string;
+  loanStartDate?: string;
   nextDueDate?: string;
   nextDueAmount?: number;
   remarks?: string;
@@ -150,6 +152,8 @@ export function paymentConfirmationTemplate(params: {
       </thead>
       <tbody>
         ${infoRow("Loan Number", params.loanNumber)}
+        ${params.loanDate ? infoRow("Loan Date", params.loanDate) : ""}
+        ${params.loanStartDate ? infoRow("Start Date", params.loanStartDate) : ""}
         ${infoRow("Payment Date", params.paymentDate)}
         ${infoRow("Payment Method", params.paymentType)}
         ${infoRow("Total Payment", fmt(params.paymentAmount), true)}

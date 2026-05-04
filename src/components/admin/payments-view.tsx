@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, DollarSign, RefreshCw } from "lucide-react";
+import { Search, Loader2, DollarSign, RefreshCw, CalendarDays } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 import { EditPaymentModal } from "@/components/admin/edit-payment-modal";
@@ -17,14 +17,16 @@ interface Payment {
 
 export function PaymentsView() {
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [editPayment, setEditPayment] = useState<PaymentSnapshot | null>(null);
   const qc = useQueryClient();
 
-  const query = new URLSearchParams({ page: String(page), limit: "20", ...(search && { search }) });
+  const query = new URLSearchParams({ page: String(page), limit: "20", ...(search && { search }), ...(dateFrom && { dateFrom }), ...(dateTo && { dateTo }) });
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["admin-payments", search, page],
+    queryKey: ["admin-payments", search, dateFrom, dateTo, page],
     queryFn: () => fetch(`/api/admin/payments?${query}`).then(r => r.json()),
   });
 
@@ -40,10 +42,31 @@ export function PaymentsView() {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder="Search by reference, borrower, or loan #..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        <div className="flex items-center gap-2">
+          <CalendarDays size={15} className="text-gray-400 shrink-0" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            title="Payment date from"
+          />
+          <span className="text-gray-400 text-xs">–</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            title="Payment date to"
+          />
+          {(dateFrom || dateTo) && (
+            <button onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }} className="text-xs text-gray-400 hover:text-gray-600 transition">✕</button>
+          )}
         </div>
         <button onClick={() => refetch()} className="p-2.5 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50"><RefreshCw size={16} /></button>
       </div>
@@ -55,8 +78,8 @@ export function PaymentsView() {
           <div className="text-center py-16 text-gray-400"><DollarSign size={40} className="mx-auto mb-3 opacity-30" /><p>No payments found</p></div>
         ) : (
           <>
-            {/* Mobile cards */}
-            <div className="sm:hidden divide-y divide-gray-100">
+            {/* Mobile / tablet cards */}
+            <div className="lg:hidden divide-y divide-gray-100">
               {payments.map((p) => (
                 <div key={p.id} className="px-4 py-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -119,7 +142,7 @@ export function PaymentsView() {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>

@@ -104,8 +104,8 @@ export function BorrowersView() {
           </div>
         ) : (
           <>
-            {/* Mobile cards */}
-            <div className="sm:hidden divide-y divide-gray-100">
+            {/* Mobile / tablet cards */}
+            <div className="lg:hidden divide-y divide-gray-100">
               {borrowers.map((b) => (
                 <div key={b.id} className="px-4 py-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -151,7 +151,7 @@ export function BorrowersView() {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>

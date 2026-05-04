@@ -35,12 +35,20 @@ export async function GET(req: NextRequest) {
   const loanId = searchParams.get("loanId");
   const borrowerId = searchParams.get("borrowerId");
   const search = searchParams.get("search") ?? "";
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
 
   const { skip, take } = getPaginationOffset(page, limit);
 
   const where = {
     ...(loanId && { loanId }),
     ...(borrowerId && { borrowerId }),
+    ...((dateFrom || dateTo) && {
+      paymentDate: {
+        ...(dateFrom && { gte: new Date(dateFrom) }),
+        ...(dateTo && { lte: new Date(dateTo + "T23:59:59.999Z") }),
+      },
+    }),
     ...(search && {
       OR: [
         { referenceNumber: { contains: search, mode: "insensitive" as const } },
@@ -286,6 +294,8 @@ export async function POST(req: NextRequest) {
       penaltyPaid: result.penaltyPaid,
       waivedInterest: result.waivedInterest,
       remainingBalance: result.newBalance,
+      loanDate: format(loan.createdAt, "MMM dd, yyyy"),
+      loanStartDate: format(loan.startDate, "MMM dd, yyyy"),
       nextDueDate: nextSchedule ? format(nextSchedule.dueDate, "MMM dd, yyyy") : undefined,
       nextDueAmount: nextSchedule ? Number(nextSchedule.totalDue) : undefined,
       remarks: data.remarks ?? undefined,
