@@ -46,14 +46,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN npm run build
 
-# Pre-compile seed.ts → seed.js so the runner can execute it with plain `node`.
-# bcryptjs (pure JS) is bundled inline; @prisma/client stays external.
-# This removes the tsx runtime dependency from the runner image entirely.
-RUN node ./node_modules/.bin/esbuild prisma/seed.ts \
-    --bundle --platform=node --target=node20 \
-    --outfile=prisma/seed.js \
-    --external:@prisma/client
-
 # ── Stage 3: runner ───────────────────────────────────────────────────────────
 # Minimal production image. Only the compiled Next.js app, Prisma runtime
 # files, and the pinned Prisma CLI are included — no source code or dev deps.
@@ -84,6 +76,9 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# bcryptjs is pure JS — needed by prisma/seed.js at runtime
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # The .bin/prisma wrapper script resolves prisma_schema_build_bg.wasm using
 # a hardcoded relative path `./prisma_schema_build_bg.wasm` (relative to its
