@@ -15,16 +15,35 @@ interface Setting {
 }
 
 const SETTING_LABELS: Record<string, string> = {
-  company_name: "Company Name",
-  company_address: "Company Address",
-  company_phone: "Company Phone",
-  company_email: "Company Email",
-  max_login_attempts: "Max Login Attempts",
-  login_lockout_minutes: "Login Lockout Duration (minutes)",
-  default_penalty_rate: "Default Penalty Rate (%)",
-  default_grace_period_days: "Default Grace Period (days)",
-  currency_symbol: "Currency Symbol",
-  timezone: "Timezone",
+  business_name:         "Business Name",
+  business_address:      "Business Address",
+  business_contact:      "Business Contact",
+  currency_symbol:       "Currency Symbol",
+  currency_code:         "Currency Code",
+  loan_number_prefix:    "Loan Number Prefix",
+  payment_ref_prefix:    "Payment Ref Prefix",
+  overdue_check_enabled: "Auto-mark Overdue",
+  reminder_days_before:  "Reminder Days Before Due",
+  max_login_attempts:    "Max Login Attempts",
+};
+
+const CURRENCY_OPTIONS = [
+  { code: "PHP", label: "PHP — Philippine Peso (₱)" },
+  { code: "USD", label: "USD — US Dollar ($)" },
+  { code: "EUR", label: "EUR — Euro (€)" },
+  { code: "GBP", label: "GBP — British Pound (£)" },
+  { code: "JPY", label: "JPY — Japanese Yen (¥)" },
+  { code: "AUD", label: "AUD — Australian Dollar (A$)" },
+  { code: "CAD", label: "CAD — Canadian Dollar (CA$)" },
+  { code: "SGD", label: "SGD — Singapore Dollar (S$)" },
+  { code: "HKD", label: "HKD — Hong Kong Dollar (HK$)" },
+  { code: "MYR", label: "MYR — Malaysian Ringgit (RM)" },
+];
+
+const NUMBER_FIELDS = new Set(["reminder_days_before", "max_login_attempts"]);
+const TOGGLE_FIELDS = new Set(["overdue_check_enabled"]);
+const DROPDOWN_FIELDS: Record<string, { code: string; label: string }[]> = {
+  currency_code: CURRENCY_OPTIONS,
 };
 
 const COLOR_SCHEMES: { id: ThemeScheme; label: string; color: string }[] = [
@@ -279,22 +298,63 @@ export function SettingsView() {
 
       {/* System Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
-        {generalSettings.map((setting) => (
-          <div key={setting.key} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start py-4 border-b border-gray-50 last:border-0">
-            <div>
-              <p className="text-sm font-medium text-gray-700">{SETTING_LABELS[setting.key] ?? setting.key}</p>
-              {setting.description && <p className="text-xs text-gray-400 mt-0.5">{setting.description}</p>}
+        {generalSettings.map((setting) => {
+          const val = values[setting.key] ?? setting.value;
+          const label = SETTING_LABELS[setting.key] ?? setting.key;
+
+          return (
+            <div key={setting.key} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center py-4 border-b border-gray-50 last:border-0">
+              <div>
+                <p className="text-sm font-medium text-gray-700">{label}</p>
+                {setting.description && <p className="text-xs text-gray-400 mt-0.5">{setting.description}</p>}
+              </div>
+              <div className="sm:col-span-2">
+                {TOGGLE_FIELDS.has(setting.key) ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={val === "true"}
+                    onClick={() => setValues(prev => ({ ...prev, [setting.key]: val === "true" ? "false" : "true" }))}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+                      val === "true" ? "bg-brand-600" : "bg-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                        val === "true" ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                ) : DROPDOWN_FIELDS[setting.key] ? (
+                  <select
+                    value={val}
+                    onChange={e => setValues(prev => ({ ...prev, [setting.key]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                  >
+                    {DROPDOWN_FIELDS[setting.key].map(opt => (
+                      <option key={opt.code} value={opt.code}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : NUMBER_FIELDS.has(setting.key) ? (
+                  <input
+                    type="number"
+                    min="1"
+                    value={val}
+                    onChange={e => setValues(prev => ({ ...prev, [setting.key]: e.target.value }))}
+                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={e => setValues(prev => ({ ...prev, [setting.key]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                )}
+              </div>
             </div>
-            <div className="sm:col-span-2">
-              <input
-                type="text"
-                value={values[setting.key] ?? setting.value}
-                onChange={(e) => setValues(prev => ({ ...prev, [setting.key]: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Branding */}
